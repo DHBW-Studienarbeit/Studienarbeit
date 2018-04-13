@@ -1,0 +1,174 @@
+\documentclass[12pt,oneside, 
+liststotoc, 						% Tabellen- und Abbildungsverzeichnis ins Inhaltsverzeichnis
+bibtotoc,						% Literaturverzeichnis ins Inhaltsverzeichnis aufnehmen
+titlepage, 						% Titlepage-Umgebung statt \maketitle
+%headsepline, 					% horizontale Linie unter Kolumnentitel
+abstracton,					% Überschrift beim Abstract einschalten, Abstract muss dazu in {abstract}-Umgebung stehen
+DIV11,						% auskommentieren, um den Seitenspiegel zu vergrößern
+%BCOR6mm,					% Bindekorrektur, die den Seitenspiegel um 6mm nach rechts verschiebt,
+]{scrreprt}		
+
+% Präambel
+\usepackage[a4paper]{geometry}
+\usepackage[utf8]{inputenc} 		% ermöglicht die direkte Eingabe von Umlauten
+\usepackage[ngerman]{babel} 		% deutsche Trennungsregeln und Übersetzung der festcodierten Überschriften
+\usepackage[T1]{fontenc} 			% Ausgabe aller Zeichen in einer T1-Codierung (wichtig für die Ausgabe von Umlauten!)
+
+\usepackage{graphicx}  			% Einbinden von Grafiken erlauben
+\usepackage{amsmath}			% Better alignment
+\usepackage{amsfonts}			% Mathematische Fonts
+\usepackage{amssymb}			% Mathematische Symbole
+
+\usepackage{mathtools}
+
+\usepackage{textcomp} 			% zum Einsatz von Eurozeichen u. a. Symbolen
+\usepackage{listings}				% Datstellung von Quellcode mit den Umgebungen {lstlisting}, \lstinline und \lstinputlisting
+\usepackage{xcolor} 				% einfache Verwendung von Farben in nahezu allen Farbmodellen
+\usepackage[german]{nomencl} 		% zur Erstellung des Abkürzungsberzeichnisses
+
+\usepackage{nameref} % \nameref macro to reference section names 
+\usepackage{fancyref}  % \fref macro to reference macros 
+\usepackage[colorlinks=true, hidelinks, linkcolor=blue, urlcolor=blue]{hyperref} %hyperlinks to pages, chapters and sections in pdf
+
+%\usepackage{lastPage} %last page macro
+\usepackage{ltablex}	 % table with automatic width adjustmant in parameter X
+\usepackage{relsize}   %enable changing of symbol sizes in math environments
+
+\usepackage[all]{nowidow} %prevent widow and orphan lines
+\setnoclub[4]	% set number of orphan lines
+\setnowidow[4]  % set number of widow lines
+
+\usepackage{tikz}	  %creating pcitures and graphs with pgfplots
+\usetikzlibrary{calc}	  %enable pgfmath
+\usetikzlibrary{arrows} %enable arrows at the and of lines in plots
+\usepackage{pgfmath} %calculate expressions
+\usepackage{pgfplots} %plotting functions
+
+\usepackage{subcaption}
+\usepackage{import}
+\usepackage[backend=biber, style=ieee]{biblatex}
+
+\usepackage{subfiles}		%making subfiles avaible, i.e. you can split your document into multiple files without rewriting the preamble (see titlepage)
+
+\usepackage{fancyhdr} % fancy headers and footers. This should be set AFTER setting up the page geometry
+
+\usepackage{lipsum} %dummy text in chapter 1
+
+% -----------------------------------------------------------------------------------------------------------------
+% Zum Aktualisieren des Abkürzungsverzeichnisses bitte auf der Kommandozeile folgenden Befehl aufrufen :
+%  makeindex Bachelorarbeit.nlo -s nomencl.ist -o Bachelorarbeit.nls
+% -----------------------------------------------------------------------------------------------------------------
+
+% Hier die persönlichen Daten eingeben:
+
+\newcommand{\titel}{Convolutional Neural Network}
+\newcommand{\untertitel}{Untertitel}
+\newcommand{\kind}{Studienarbeit}
+\newcommand{\course}{Informationstechnik}
+\newcommand{\Author}{Benjamin Riedle, Florian Schmit, Josua Benz}
+\newcommand{\matriculationno}{9016181}
+\newcommand{\kurs}{TINF15IN}
+\newcommand{\duedate}{4. Juni 2018}
+\newcommand{\bearbeitungszeit}{30. November 2017 - 4. Juni 2018}
+\newcommand{\supervisordhbw}{Herr Strey}
+
+% Abkürzungen
+\newcommand{\ua}{\mbox{u.\,a.\ }}
+\newcommand{\zB}{\mbox{z.\,B.\ }}
+\newcommand{\bs}{$\backslash$}
+
+\renewcommand{\baselinestretch}{1.5} %Zeilenabstand
+
+% -----------------------------------------------------------------------------------------------------------------
+%  setting up fancypagestyle for titlepage
+% -----------------------------------------------------------------------------------------------------------------
+\newcommand{\logoheight}{1cm}
+
+\fancypagestyle{firstPageStyle}
+{
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+%linkes DH-Logo durch Firmenlogo ersetzen oder entfernen
+\lhead{\includegraphics[height=\logoheight]{Logo_DHBW.png}}\chead{}\rhead{\includegraphics[height=\logoheight]{Logo_DHBW.png}}
+\lfoot{}\cfoot{}\rfoot{}
+}
+
+
+% -----------------------------------------------------------------------------------------------------------------
+% Hier beginnt das eigentliche DOKUMENT
+% -----------------------------------------------------------------------------------------------------------------
+
+%\addbibresource{bibliography.bib}	%add a bibliography file
+
+\graphicspath{{images/}{../images/}} %where to search for graphics in main (first brackets) and in subfiles (second brackets)
+							%here subfiles are in a one level lower directory than the main document
+
+\makenomenclature
+\begin{document}
+\subfile{titlepage}
+\clearpage
+
+\begingroup
+~
+\vfill
+\noindent Der Inhalt dieser Arbeit darf weder als Ganzes noch in Auszügen Personen außerhalb des Prüfungsprozesses und des Evaluationsverfahrens zugänglich gemacht werden, sofern keine anders lautende Genehmigung des Dualen Partners vorliegt.
+\vfill
+~
+\endgroup
+~\clearpage
+~\vfill
+\begin{tabular}{|p{\linewidth}|}
+\hline
+~\hfill Erklärung \hfill~ \\[12pt]
+Ich versichere hiermit, dass ich meine Praxisarbeit mit dem Thema ``\titel'' selbstständig verfasst und keine anderen als die angegebenen Quellen und Hilfsmittel benutzt habe.\\
+\vspace{1cm}
+\underline{\hspace{5cm}}\hspace{2cm}\underline{\hspace{5cm}}\\[6pt]
+Ort \hspace{1cm} Datum \hspace{4cm} Unterschrift\\
+\hline
+\end{tabular}
+\vfill ~
+\clearpage
+\rmfamily
+\chapter{Einleitung}
+\chapter{Zusammenfassung}
+\chapter{Abstract}
+
+\chapter{Klassische Neuronale Netzwerke}
+\section{Funktionsweise Perceptron}
+\section{Aktivierungen}
+\section{Gradient Descend}
+\section{Backpropagation}
+
+\chapter{Convolutional Neural Network}
+\section{Faltungsoperation}
+\section{Pooling}
+\section{Anpassungen der Backpropagation}
+
+\chapter{Serielle Implementierung}
+\section{Systembeschreibung und Netzaufbau}
+\section{Beschreibung der Problematik einer seriellen Implementierung}
+
+\chapter{Implementierung auf einer general Purpose x86 CPU}
+
+\chapter{Implementierung auf einem Intel Xeon Phi Coprozessor}
+
+\chapter{Implementierung auf einer Nvidia GPU mit CUDA}
+\section{Grafikkarten zur Berechnung}
+\subsection{Stärken und Schwächen der Grafikkarte}
+\subsection{Unterschiede zur Berechnung mit CPU (Architektur)}
+\subsection{CUDA Programmierung (Besonderheiten)}
+\subsection{cuBLAS (Basic Linear Algebra Sub-Routines)}
+\section{Verwendete Hardware: Titan X}
+\section{Umsetzung}
+\subsection{Implementierung Convolution}
+\subsection{Implementierung ...}
+\subsection{Implementierung ...}
+\section{Performance}
+\subsection{Vergleich Sequentielle Implementierung}
+\subsection{Vergleich mit anderen Implementierungen (evtl. Tensorflow)}
+
+\chapter{Vergleich der unterschiedlichen Implementierungen}
+\end{document}
+
+

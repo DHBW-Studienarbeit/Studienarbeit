@@ -1,0 +1,8 @@
+*.log
+*.pdf
+*.aux
+*.nlo
+*.out
+*.bcf
+*.run.xml
+*.gz
