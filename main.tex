@@ -131,44 +131,44 @@ Ort \hspace{1cm} Datum \hspace{4cm} Unterschrift\\
 \clearpage
 \rmfamily
 \chapter{Einleitung}
+\subfile{sections/einleitung}	%import your subfiles
+\clearpage
+
 \chapter{Zusammenfassung}
+\subfile{sections/zusammenfassung}	%import your subfiles
+\clearpage
+
 \chapter{Abstract}
+\subfile{sections/abstract}	%import your subfiles
+\clearpage
 
 \chapter{Klassische Neuronale Netzwerke}
-\section{Funktionsweise Perceptron}
-\section{Aktivierungen}
-\section{Gradient Descend}
-\section{Backpropagation}
+\subfile{sections/neuronetwork}	%import your subfiles
+\clearpage
 
 \chapter{Convolutional Neural Network}
-\section{Faltungsoperation}
-\section{Pooling}
-\section{Anpassungen der Backpropagation}
+\subfile{sections/cnn}
+\clearpage
 
 \chapter{Serielle Implementierung}
-\section{Systembeschreibung und Netzaufbau}
-\section{Beschreibung der Problematik einer seriellen Implementierung}
+\subfile{sections/seriell}
+\clearpage
 
 \chapter{Implementierung auf einer general Purpose x86 CPU}
+\subfile{sections/gpcpu}
+\clearpage
 
 \chapter{Implementierung auf einem Intel Xeon Phi Coprozessor}
+\subfile{sections/xeonphi}
+\clearpage
 
 \chapter{Implementierung auf einer Nvidia GPU mit CUDA}
-\section{Grafikkarten zur Berechnung}
-\subsection{Stärken und Schwächen der Grafikkarte}
-\subsection{Unterschiede zur Berechnung mit CPU (Architektur)}
-\subsection{CUDA Programmierung (Besonderheiten)}
-\subsection{cuBLAS (Basic Linear Algebra Sub-Routines)}
-\section{Verwendete Hardware: Titan X}
-\section{Umsetzung}
-\subsection{Implementierung Convolution}
-\subsection{Implementierung ...}
-\subsection{Implementierung ...}
-\section{Performance}
-\subsection{Vergleich Sequentielle Implementierung}
-\subsection{Vergleich mit anderen Implementierungen (evtl. Tensorflow)}
+\subfile{sections/cuda}
+\clearpage
 
 \chapter{Vergleich der unterschiedlichen Implementierungen}
+\subfile{sections/vergleich}
+\clearpage
 \end{document}
 
 
