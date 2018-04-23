@@ -29,6 +29,30 @@ Eine weitere Möglichkeit sind die Reduktionsvariablen. Diese funktionieren wie 
 „Wird eine Variable in keiner der Deklarationen erwähnt, wird sie standardmäßig als gemeinsame Variable deklariert. Eine Ausnahme hiervon bildet die bei der Aufteilung einer Schleife auf mehrere Threads erzeugte Index-Variable der Schleife, die standardmäßig als private Variable deklariert wird. Soll ein explizites Deklarieren jeder im parallelen Bereich verwendeten Variable erzwungen werden, so wird der Direktive zusätzlich der Parameter default(none) hinzugefügt.“ (Uni München)
 
 \subsubsection{Parallelisierung}
+\lipsum[1-2]
 
+\section{Umsetzung}
+
+Zur Implementierung des Convolutional Neural Networks auf einer x86-Architektur wird die serielle Implementierung als Grundlage verwendet. Diese muss jedoch umgeschrieben werden, um parallel auf mehreren CPU-Kernen verwendet werden zu können. Des weiteren werden folgende Methoden zur Optimierung verwendet:
+\begin{itemize}
+	\item Reduzierung der Speicherzugriffe
+	\item Cache-Hierarchie ausnutzen
+	\item AVX zur Multiplikation verwenden
+\end{itemize}
+
+\subsection{Optimierung des Convolutional Layers}
+
+Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer. Bei der seriellen Implementierung wird für jede Multiplikation ein neues Array beschrieben, welches dann mit einem Gewichts-Array multipliziert wird. Das Ergebnis dieser Multiplikation wird dann in eine temporäre Variable gespeichert, zu welcher dann ein Bias addiert wird um am Ende den Wert für den Output zu erhalten.
+
+Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies kann sich vermeiden lassen, indem man die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt in den Zielspeicherplatz schreibt. 
+
+Es wurde sich für eine Methode entschieden, bei der jedes Element vom Activation-Tensor durchgegangen wird. Hierbei wird zuerst der Activation-Tensor auf 0 gesetzt. Je nachdem, wo sich das Element im Activation-Tensor befindet, gibt es verschiedene Elemente der Gewichts-Matritzen, mit denen es multipliziert werden muss. Diese werden mit zwei if-Bedingungen ermittelt. Anschließend werden diese Werte der Gewichts-Matritzen mit dem einen Element des Inputs multipliziert und die Ergebnisse an die richtige Stelle des Output-Tensors hinzugefügt.
+
+Durch diese Methode kann der Output-Tensor und die Gewichte im Cache liegen, die Speicherzugriffe erfolgen somit sehr schnell. Da kein neuer Speicher allokiert wird, muss nicht darauf gewartet werden bis der vergleichsweise sehr langsame Arbeitsspeicher den Speicherplatz freigibt und die Daten in den Cache geladen werden können. 
+
+Eine weitere Optimierung ergibt sich durch die Verwendung von AVX. Neue CPUs von Intel und AMD besitzen sogenannte AVX-Register. Auf diese Register können SIMD (Single Instruction Multiple Data) Operationen angewandt werden. Einer dieser SIMD Operationen ist die Multiplikation von float Zahlen.
+Je nach Prozessor sind die AVX-Register 256 oder 512 Byte groß. Somit lassen sich 8 beziehungsweise 16 Floats in einem Register unterbringen. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Durch Aufrufen des Befehls zur Multiplikation werden nun das n-te Float in Register 1 mit dem n-ten Float in Register 2 multipliziert und in ein Zielregister geschrieben.
+
+Durch die Verwendung von AVX lässt sich somit die Zeit zur Multiplikation bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. 
 
 \end{document}
