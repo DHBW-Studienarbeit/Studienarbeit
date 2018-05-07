@@ -47,6 +47,9 @@ DIV11,						% auskommentieren, um den Seitenspiegel zu vergrößern
 \usepackage{subcaption}
 \usepackage{import}
 \usepackage[backend=biber, style=ieee]{biblatex}
+%\usepackage[style=apa,backend=biber]{biblatex}
+\addbibresource{bibliography.bib}
+
 
 \usepackage{subfiles}		%making subfiles avaible, i.e. you can split your document into multiple files without rewriting the preamble (see titlepage)
 
@@ -168,6 +171,9 @@ Ort \hspace{1cm} Datum \hspace{4cm} Unterschrift\\
 
 \chapter{Vergleich der unterschiedlichen Implementierungen}
 \subfile{sections/vergleich}
+\clearpage
+
+\printbibliography
 \clearpage
 \end{document}
 

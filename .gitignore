@@ -6,3 +6,5 @@
 *.bcf
 *.run.xml
 *.gz
+*.bbl
+*.blg
