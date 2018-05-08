@@ -29,7 +29,7 @@ Eine weitere Möglichkeit sind die Reduktionsvariablen. Diese funktionieren wie 
 „Wird eine Variable in keiner der Deklarationen erwähnt, wird sie standardmäßig als gemeinsame Variable deklariert. Eine Ausnahme hiervon bildet die bei der Aufteilung einer Schleife auf mehrere Threads erzeugte Index-Variable der Schleife, die standardmäßig als private Variable deklariert wird. Soll ein explizites Deklarieren jeder im parallelen Bereich verwendeten Variable erzwungen werden, so wird der Direktive zusätzlich der Parameter default(none) hinzugefügt.“ (Uni München)
 
 \subsubsection{Parallelisierung}
-\lipsum[1-2]
+
 
 \section{Umsetzung}
 
@@ -42,11 +42,15 @@ Zur Implementierung des Convolutional Neural Networks auf einer x86-Architektur 
 
 \subsection{Optimierung des Convolutional Layers}
 
-Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer. Bei der seriellen Implementierung wird für jede Multiplikation ein neues Array beschrieben, welches dann mit einem Gewichts-Array multipliziert wird. Das Ergebnis dieser Multiplikation wird dann in eine temporäre Variable gespeichert, zu welcher dann ein Bias addiert wird um am Ende den Wert für den Output zu erhalten.
+Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer. Bei der seriellen Implementierung wird für jede Multiplikation ein neues Array beschrieben, welches dann mit einem Gewichts-Array multipliziert wird. Das Ergebnis dieser Multiplikation wird dann in eine temporäre Variable gespeichert, zu welcher dann ein Bias addiert wird um am Ende den Wert für den Output zu erhalten. Die Vorgehensweise ist in der Grafik unterhalb zu sehen.
+
+\includegraphics[width=\textwidth]{Conv_Layer_Seriel.png} %Grafik Ablauf Convolutional Layer Seriell
+
+Aus einem Input wird der Bereich ausgewählt, der mit dem Kern gefaltet werden soll. Die entsprechenden Werte werden in einen neuen Vektor geschrieben. Dieser Vektor wird anschließend mit dem Kern Multipliziert. Das Ergebnis wird in einen temporären Vektor geschrieben und anschließend noch mit dem Bias-Vektor elementweiße multipliziert. Die dabei entstehenden Werte werden an die richtige Stelle der Output-Matrix geschrieben.
 
 Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies kann sich vermeiden lassen, indem man die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt in den Zielspeicherplatz schreibt. 
 
-Es wurde sich für eine Methode entschieden, bei der jedes Element vom Activation-Tensor durchgegangen wird. Hierbei wird zuerst der Activation-Tensor auf 0 gesetzt. Je nachdem, wo sich das Element im Activation-Tensor befindet, gibt es verschiedene Elemente der Gewichts-Matritzen, mit denen es multipliziert werden muss. Diese werden mit zwei if-Bedingungen ermittelt. Anschließend werden diese Werte der Gewichts-Matritzen mit dem einen Element des Inputs multipliziert und die Ergebnisse an die richtige Stelle des Output-Tensors hinzugefügt.
+Es wurde sich für eine Methode entschieden, bei der jedes Element vom Activation-Tensor durchgegangen wird. Hierbei wird zuerst der Output-Tensor auf 0 gesetzt. Je nachdem, wo sich das Element im Activation-Tensor befindet, gibt es verschiedene Elemente der Gewichts-Matritzen, mit denen es multipliziert werden muss. Das erste Element links oben muss nur mit dem Element links oben des Faltungskerns multipliziert werden, währenddessen Elemente in der Mitte des Input-Tensors mit allen Elementen des Faltungskerns multipliziert werden müssen und die Ergebnisse an verschiedenen Stellen im Output geschrieben werden. Die entsprechenden Elemente des Faltungkerns werden mit zwei if-Bedingungen ermittelt. Anschließend werden diese Werte des Faltungskerns mit dem einen Element des Inputs multipliziert und die Ergebnisse an die richtige Stelle des Output-Tensors hinzugefügt.
 
 Durch diese Methode kann der Output-Tensor und die Gewichte im Cache liegen, die Speicherzugriffe erfolgen somit sehr schnell. Da kein neuer Speicher allokiert wird, muss nicht darauf gewartet werden bis der vergleichsweise sehr langsame Arbeitsspeicher den Speicherplatz freigibt und die Daten in den Cache geladen werden können. 
 
