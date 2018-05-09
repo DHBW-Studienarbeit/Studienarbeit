@@ -3,29 +3,28 @@
 \begin{document}
 \section{OpenMP (Open Multi Procesing)}
 
-Aktuelle CPUs im Arbeitsplatzrechner, Laptop, Tablet oder Smartphone besitzen mehrere CPU-Kerne. Um das volle Potenzial der aktuellen CPUs auszunutzen, ist es zwingend notwendig, Programme zu parallelisieren.
+Aktuelle CPUs im Arbeitsrechner, Laptop, Tablet oder Smartphone besitzen inzwischen mehrere CPU-Kerne. Um das volle Potenzial der dieser CPUs auszunutzen, ist es zwingend notwendig, Programme zu parallelisieren sodass Programmabschnitte auf mehreren Kernen gleichzeitig ausgeführt werden können.
 „Unter der Parallelisierung eines Programms versteht man, dass mehrere Teile einer Aufgabe gleichzeitig nebeneinander ausgeführt werden, um so die Gesamtaufgabe schneller als bei strikt serieller Verarbeitung zu beenden.“ (Günther)
-Mit OpenMP ist es relativ einfach möglich, Programme mithilfe von Direktiven im Programmcode parallel ablaufen zu lassen. OpenMP kann für die Programmiersprachen C, C++ und Fortran verwendet werden.
+Mit der Programmierschnittstelle OpenMP ist es relativ einfach Programme, mithilfe von Direktiven die in den Programmcode eingefügt werden, parallel ablaufen zu lassen. OpenMP kann hierbei für die Programmiersprachen C, C++ und Fortran verwendet werden.
 
 \subsection{Programmiermodell}
 
-die nebenläufige Abarbeitung von Programmteilen wird bei OpenMP durch das Fork-Join-Prinzip erzielt. Dabei passiert an einer bestimmten Stelle im Programmcode ein sogenannter Fork. An dieser Stelle erzeugt der Thread, der den bisherigen Programmcode ausgeführt hat, neue Threads die den folgenden Code parallel ausführen. Der Thread, der die anderen Threads erzeugt hat, wird Master-Thread genannt. Am Ende des parallelen Bereichs geschieht ein Join. Dabei werden alle Treads synchronisiert und beendet. Lediglich der Master-Thread bleibt erhalten und führt das weitere Programm seriell aus.
+Die nebenläufige Abarbeitung von Programmteilen wird bei OpenMP durch das Fork-Join-Prinzip erzielt. Dabei erfolgt an einer bestimmten Stelle im Programmcode ein sogenannter Fork. An dieser Punkt erzeugt der Thread, der den vorherigen Programmcode ausgeführt hat, neue Threads die den danach folgenden Code parallel ausführen. Der Thread, der die anderen Threads erzeugt hat, wird Master-Thread genannt. Am Ende des parallelen Bereichs geschieht ein Join. Bei einem Join werden alle Treads synchronisiert und beendet. Lediglich der Master-Thread bleibt erhalten und führt das weitere Programm seriell aus.
 
-OpenMP erlaubt es, einen Fork innerhalb eines parallelen Programmabschnittes zu tätigen. Der außerhalb liegende Join muss dann auf alle innere Joins warten, bis alle Threads beendet werden können.
+OpenMP erlaubt es auch, einen Fork innerhalb eines parallelen Programmabschnittes zu tätigen. Der außerhalb liegende Join muss dann auf alle innere Joins warten, also bis alle innerhalb erzeugten Threads beendet wurden.
 
 \subsection{OpenMP-Direktiven}
 
-Im folgenden Abschnitt sind alle Programmbeispiele in C- oder C++-Syntax gehalten. Die selben Anweisungen sind auch in Fortran möglich, können dann jedoch etwas anders aussehen
+Im folgenden Abschnitt sind alle Programmbeispiele in C- oder C++-Syntax gehalten. Die selben Anweisungen sind auch in Fortran möglich, können sich jedoch in der Erscheinungsweise unterscheiden.
 
-zuerst muss die Datei omp.h includiert werden. Anschließend kann mit \#pragma omp <Klausel> eine Compiler-Direktive angegeben werden die das Programm mithilfe von OpenMP parallel ausführt. Von Kompilern, die OpenMP nicht unterstützen, wird diese Zeile ignoriert. Somit kann der gleiche Programmcode als paralleles Programm oder als serielles Programm compiliert werden.
-OpenMP kann zum einen den selben Programmcode auf mehreren Threads ausführen, oder verschiedene Berechnungen auf verschiedenen Threads. 
+Zuerst muss die Datei \texttt{omp.h} includiert werden. Anschließend kann mit \texttt{\#pragma\ omp\ <Klausel>} eine Compiler-Direktive angegeben werden. Mithilfe dieser Direktive und OpenMP wird der folgende Programmabschnitt parallel ausgeführt. Von Kompilern, die OpenMP nicht unterstützen, wird diese Zeile ignoriert. Somit kann der gleiche Programmcode als paralleles oder als serielles Programm compiliert werden.
 
 \subsubsection{Variablen}
 
-Variablen können entweder privat oder gemeinsam deklariert werden. Eine gemeinsame Variable kann von verschiedenen Threads genutzt werden, während eine private Variable für jeden Thread einen anderen Wert annehmen kann. Gemeinsame Variablen werden mit dem Parameter shared(Liste\_der\_Variablen) deklariert. In der Liste werden alle Variablen hineingeschrieben, die gemeinsam genutzt werden sollen. Die Variablen sind mit dem Wert initialisiert, die sie vor dem Fork hatten. Private Variablen können hingegen mit private(Liste\_der\_Variablen) deklariert werden.  Anders als die Gemeinsamen Variablen sind diese anfangs nicht initialisiert, mit Ausnahme von Objekten die einen Konstruktur besitzen und Indexvariablen von Schleifen.
-Soll der Wert, den die Variable vor Beginn der parallelen Ausführung hatte, verwendet werden, muss dafür der Parameter firstprivate(Liste\_der\_Variablen) verwendet werden. Soll der Wert der Variable vor dem Join im weiteren Programmablauf verwendet werden, muss hierfür der Parameter lastprivate(Liste\_der\_Variablen) verwendet werden.
+Variablen können entweder privat oder gemeinsam deklariert werden. Eine gemeinsame Variable kann von verschiedenen Threads genutzt werden, während eine private Variable für jeden Thread einen anderen Wert annehmen kann. Gemeinsame Variablen werden mit dem Parameter \texttt{shared(Liste\_der\_Variablen)} deklariert. In der Liste werden alle Variablen hineingeschrieben, die gemeinsam genutzt werden sollen. Die Variablen sind mit dem Wert initialisiert, die sie vor dem Fork hatten. Private Variablen können hingegen mit \texttt{private(Liste\_der\_Variablen)} deklariert werden.  Anders als die Gemeinsamen Variablen sind diese anfangs nicht initialisiert, mit Ausnahme von Objekten die einen Konstruktur besitzen und Indexvariablen von Schleifen.
+Soll der Wert, den die Variable vor Beginn der parallelen Ausführung hatte, verwendet werden, muss dafür der Parameter \texttt{firstprivate(Liste\_der\_Variablen)} verwendet werden. Soll der Wert der Variable vor dem Join im weiteren Programmablauf verwendet werden, muss hierfür der Parameter \texttt{lastprivate(Liste\_der\_Variablen)} verwendet werden.
 
-Eine weitere Möglichkeit sind die Reduktionsvariablen. Diese funktionieren wie private Variablen, bis zum Zeitpunkt des Joins. Bei Reduktionsvariablen werden alle Werte der privaten Variablen durch eine Operation zusammengefasst. Bei dieser Operation kann es sich um die Addition, Subtraktion, Multiplikation, XOR, binäre und Logische Und-Verknüpfung oder binäre und Logische Oder-Verknüpfung handeln. Der Parameter für Reduktionsvariablen lautet reduction( op:Liste\_der\_Variablen).
+Eine weitere Möglichkeit bei Variablen sind die Reduktionsvariablen. Diese funktionieren wie private Variablen, bis zum Zeitpunkt des Joins. Bei Reduktionsvariablen werden alle Werte der privaten Variablen durch eine Operation zusammengefasst. Bei dieser Operation kann es sich um die Addition, Subtraktion, Multiplikation, XOR, binäre und Logische Und-Verknüpfung oder binäre und Logische Oder-Verknüpfung handeln. Der Parameter für Reduktionsvariablen lautet \texttt{reduction( op:Liste\_der\_Variablen)}.
 „Wird eine Variable in keiner der Deklarationen erwähnt, wird sie standardmäßig als gemeinsame Variable deklariert. Eine Ausnahme hiervon bildet die bei der Aufteilung einer Schleife auf mehrere Threads erzeugte Index-Variable der Schleife, die standardmäßig als private Variable deklariert wird. Soll ein explizites Deklarieren jeder im parallelen Bereich verwendeten Variable erzwungen werden, so wird der Direktive zusätzlich der Parameter default(none) hinzugefügt.“ (Uni München)
 
 \subsubsection{Parallelisierung}
@@ -51,6 +50,16 @@ Aus einem Input wird der Bereich ausgewählt, der mit dem Kern gefaltet werden s
 Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies kann sich vermeiden lassen, indem man die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt in den Zielspeicherplatz schreibt. 
 
 Es wurde sich für eine Methode entschieden, bei der jedes Element vom Activation-Tensor durchgegangen wird. Hierbei wird zuerst der Output-Tensor auf 0 gesetzt. Je nachdem, wo sich das Element im Activation-Tensor befindet, gibt es verschiedene Elemente der Gewichts-Matritzen, mit denen es multipliziert werden muss. Das erste Element links oben muss nur mit dem Element links oben des Faltungskerns multipliziert werden, währenddessen Elemente in der Mitte des Input-Tensors mit allen Elementen des Faltungskerns multipliziert werden müssen und die Ergebnisse an verschiedenen Stellen im Output geschrieben werden. Die entsprechenden Elemente des Faltungkerns werden mit zwei if-Bedingungen ermittelt. Anschließend werden diese Werte des Faltungskerns mit dem einen Element des Inputs multipliziert und die Ergebnisse an die richtige Stelle des Output-Tensors hinzugefügt.
+
+In unten stehender Formel ist der Vorgang zu erkennen. x\_pos und y\_pos sind die Indizes des Faltungskerns mit dem das Element \(a_{x,y,z}\) multipliziert werden muss. Alle Kombinationen von x\_pos, y\_pos und z\_pos werden durchgegangen. Anschließend wird das nächste Element von \(a\) verwendet.
+\begin{equation}
+\begin{split}
+x\_pos = {min\_x_{a_{x,y,z}}\ ..\ max\_x_{a_{x,y,z}}}\\
+y\_pos = {min\_y_{a_{x,y,z}}\ ..\ max\_y_{a_{x,y,z}}}\\
+z\_pos = {z\ ..\ length(w_{z})\ [SW:\ length(a_{z})]}\\
+o_{x-x\_pos,y-y\_pos,z\_pos/z} += a_{x,y,z}*w_{x\_pos,y\_pos,z\_pos}
+\end{split}
+\end{equation}
 
 Durch diese Methode kann der Output-Tensor und die Gewichte im Cache liegen, die Speicherzugriffe erfolgen somit sehr schnell. Da kein neuer Speicher allokiert wird, muss nicht darauf gewartet werden bis der vergleichsweise sehr langsame Arbeitsspeicher den Speicherplatz freigibt und die Daten in den Cache geladen werden können. 
 
