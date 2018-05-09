@@ -6,5 +6,6 @@
 *.bcf
 *.run.xml
 *.gz
+*.gz(busy)
 *.bbl
 *.blg
