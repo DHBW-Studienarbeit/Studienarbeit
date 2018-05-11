@@ -1,16 +1,52 @@
 \documentclass[../main.tex]{subfiles}
 
 \begin{document}
+Neuronale Netze werden, wie auch in dieser Arbeit, häufig zur Bild- und Mustererkennung genutzt. Dabei steht dem Netzwerk eine zweidimensionale Matrix von Pixelinformation in Form von Farb- oder Graustufeninformationen als Eingabe zur Verfügung. Aus dieser Eingabe soll nun eine Ausgabe in Form einer Klassifizierung bestimmt werden.  Eine solche Zuordnung kann mit den bereits beschriebenen klassischen Neuronalen Netzen erfolgen. Der Nachteil dieser Methode ist, dass diese Art von Neuronennetzen die innere Struktur der Bilder nicht berücksichtigen können. Beispielsweise stellt eine Verschiebung des Musters innerhalb des Eingangsbildes für solche Netze ein Problem bei der Erkennung dar. Auch eine Verkleinerung oder Vergrößerung führt zu Problemen. Solche Effekte müssen zur zuverlässigen Erkennung bereits in den Trainingsdaten berücksichtigt werden. Dies führt unweigerlich zu größeren Datensätzen, die für das Training eines zuverlässigen Netzes benötigt werden. Dies könnte durch Einbeziehung der inneren Struktur des Bildes verhindert werden. Dazu stellten Yann LeCun, Léon Bottou, Yoshua Bengio und Patrick Haffner in ihrerm Paper \emph{Gradient-based learning applied to document recognition} von 1998 sogenannte \emph{Convolutional Neural Networks} vor. \par Die dort vorgestellte Netzstruktur erlaubt die Erkennung von Strukturen unabhängig von ihrer Position im Ausgangsbild. Im folgenden Abschnitt soll das grundlegende Prinzip von Convolutional Neural Networks (CNN) vorgestellt und erläutert werden.
 \section{Faltungsoperation}
+Convolutional Neural Networks beruhen auf der mathematischen Faltungsoperation (Convolution). Auf abstrakter Ebene wird des zweidimensionale Eingangsbild $X(i,j)$ mit einem zweidimensionalen gewichteten Fenster $W(k,l)$ gefaltet. 
+\begin{align}
+	Y(i,j) = \sum\limits_{p=0}^{n}\sum\limits_{q=0}^{n} X(i-p+a,j-q+a)W(p,q) \label{eq:faltung_math}
+\end{align}
+Gleichung \ref{eq:faltung_math} zeigt die diskrete Faltung für den genannten Fall. Dabei bezeichnet $n$ die Zeilen- bzw. Spaltenzahl der quadratischen Matrix $W$ und $a$ einen von $n$ abhängigen Parameter, der das Fenster korrekt positioniert. Bildlich gesprochen wird hier ein gewichtetes Fenster sowohl in horizontaler als auch in vertikaler Richtung über das Ausgangsbild bewegt. An jeder Position werden die jeweiligen Werte des Ausgangsbildes mit den gewichten der Fenstermatrix multipliziert und zu einem Wert addiert. Dieser Wert fließt in Convolutional Neural Networks in ein Neuron der nächsten Netzwerkschicht.\par
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/Riedle/Convolution_1}
+	\caption{Berechnung eines Neurons aus einem Faltungskern (vgl. \cite{NNADL_PIC_CONV_1})} \label{fig:conv_1}
+\end{figure} 
+In Abbildung \ref{fig:conv_1} ist der Vorgang für den Faltungskern an einer Position dargestellt. Dabei werden Neuronen aus dem Eingangsbild über den Faltungskern mit den entsprechenden Gewichten auf ein Hidden Neuron abgebildet. \par 
+\begin{figure}[!htbp]
+	\centering
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\includegraphics[width=0.8\linewidth]{../images/Riedle/Convolution_2_1}
+	\end{subfigure}%
+	\begin{subfigure}{0.5\textwidth}
+		\centering
+		\includegraphics[width=0.8\linewidth]{../images/Riedle/Convolution_2_2}
+	\end{subfigure}
+	\caption{Faltungsoperation für zwei Ausgangsneuronen (vgl. \cite{NNADL_PIC_CONV_2})} \label{fig:conv_2}
+\end{figure}
+Führt man nun die Faltung weiter, erhält man als Ergebnis erneut ein zweidimensionales Ausgangsbild mit geringerer Seitenlänge. Abbildung \ref{fig:conv_2} zeigt diesen Schritt. Für ein $28\times28$-Eingangsbild und einen $5\times5$-Faltungskern erhält man bei einer Schrittweite von $1$ beispielsweise ein $24\times24$-Ausgangsbild. \par 
+Bei dieser Faltungsoperation werden logischerweise für jedes Neuron die gleichen Gewichte verwendet. Im Fall des hier gezeigten Neuronalen Netzwerkes teilen sich die Ausgangsneuronen dieser Operation auch die Biases. Mit der Aktivierungsfunktion $\sigma$ bestimmt sich der Output eines Neurons damit nach Gleichung \ref{eq:conv_activation}.
+\begin{align}\label{eq:con_activation}
+	output = \sigma(b+ \sum\limits_l\sum\limits_m w_{l,m}a_{j+l,k+m})
+\end{align} \par
+Mit einem Satz geteilter Gewichte und Biases ist das Netz nun in der Lage, ein Strukturelement an beliebigen Positionen im Bild zu erkennen. Um es dem Netz nun zu gestatten, mehrere verschiedene Strukturen zu erkennen, vervielfacht man diesen Vorgang mit je eigenen Gewichten und Biases. Es entstehen sogenannte Featuremaps.
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/Riedle/Convolution_Features}
+	\caption{Darstellung verschiedener Featuremaps (vgl. \cite{NNADL_PIC_CONV_FEATURES})} \label{fig:conv_features}
+\end{figure}
+Dieser Vorgang ist in Abbildung \ref{fig:conv_features} dargestellt. Das Netzwerk ist somit in der Lage verschiedene Strukturelemente an beliebigen Positionen zu erkennen. Erweitert man das Netz um weitere Schichten, kann es mit entsprechendem Training auch lernen, welche Kombinationen dieser Elemente zu einem Mustertyp gehören.\par Damit erweitert sich der eingangs genannte Vorteil von CNNs. Nicht nur die Verschiebung ganzer Muster innerhalb eines Bildes kann erkannt werden, sondern auch wiederkehrende Strukturelemente können für die Erkennung anderer Muster durch entsprechende Kombination in weiteren Schichten genutzt werden.
 \section{Pooling}
 Die Erzeugung von vielen Featuremaps aus einer einzelnen Eingabe gehört zu den grundlegenden Eigenschaften der im vorherigen Abschnitt beschriebenen Faltungsoperation. Dies führt allerdings zu einer erheblichen Vergrößerung der Datenmenge, die von nachfolgenden Layern bearbeitet werden muss. Um das Ausmaß dieser Vergrößerung einschätzen zu können, wird an dieser Stelle die Größe des Outputs einer Faltung in Abhängigkeit von der Eingabegröße und weiterer Eigenschaften der Faltungsschicht untersucht. 
 In den nachfolgenden Gleichungen steht \(S\) für die Größe einer einzelnen Ein- bzw. Ausgabe. Die Variablen \(x\), \(y\) und \(f\) stehen für die Dimensionen der Ein- bzw. Ausgabe. Die Größe des Filterkernels ist durch \(F_x\) und \(F_y\) bestimmt, für die Schrittweite wird der Wert \(1\) angenommen. 
 \begin{equation}
 \begin{split}
-S_{in} = x_{in} y_{in} f_{in}\\
-S_{out} = x_{out} y_{out} f_{out}\\
-x_{out} = x_{in} - F_x + 1\\
-y_{out} = y_{in} - F_y + 1
+S_{in} &= x_{in} y_{in} f_{in}\\
+S_{out} &= x_{out} y_{out} f_{out}\\
+x_{out} &= x_{in} - F_x + 1\\
+y_{out} &= y_{in} - F_y + 1
 \end{split}
 \end{equation}
 Unter der Bedingung, dass \(x_{in} >> F_x\) und \(y_{in} >> F_y\) ergibt sich die Näherung \(\frac{S_{out}}{S_{in}} = \frac{f_{out}}{f_{in}}\). Die Anzahl der Neuronen einer Faltungsschicht gegenüber der des vorherigen Layers steigt bei der Faltungsoperation demzufolge annähernd proportional zur Anzahl der Featuremaps. 
