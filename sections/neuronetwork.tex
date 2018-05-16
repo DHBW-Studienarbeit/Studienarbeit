@@ -1,7 +1,35 @@
 \documentclass[../main.tex]{subfiles}
 
 \begin{document}
+
+Neuronale Netzwerke können als Implementierung eines Gehirns auf einem Computer verstanden werden. Die Funktionsweise eines Neuronalen Netzwerkes wurde vom biologischen Vorbild abgeschaut und an die Gegebenheiten eines Computers angepasst. 
+
+Ein menschliches Gehirn besteht unter anderem aus sehr vielen Neuronen. Diese Neuronen empfangen Signale in Form von elektrischen Impulsen und geben diese weiter an andere Neuronen. Dieses banale Prinzip ermöglicht uns, Dinge zu erlernen und gelerntes anzuwenden. Die Anzahl der Neuronen ist hierfür entscheidend, im menschlichen Gehirn existieren etwa 100 Milliarden Neuronen. (vgl. \cite{articleKuenstlichesGehirn})
+
+Je nach Komplexität des zu lösenden Problems muss auch das Neuronale Netzwerk sehr groß werden, um genügend Daten auszulesen und zu bearbeiten.
+
+Der größte Unterschied zwischen der klassischen Programmierung und der Erstellung von Neuronalen Netzwerken ist, dass bei der Erstellung eines Netzwerkes nicht die tatsächlichen Berechnungen festgelegt werden, sondern diese mit Trainingsdatensätze erst gelernt werden müssen. Der Softwareentwickler kann lediglich an Paramentern drehen und beispielsweise die Anzahl der Neuronen oder die Anzahl der Layer eines Netzwerkes festlegen.
+Große Firmen wie Google, Facebook oder Apple sammeln hierfür schon seit Jahren Daten von Nutzern, um diese für das Trainieren von Netzwerken zu verwenden und dadurch neue Geschäftsmodelle zu entwickeln.
+
 \section{Funktionsweise Perceptron}
+Die Idee der Perceptrons wurde von Frank Rosenblatt 1958 in einem Paper erläutert. (\cite{paperPerceptron}) 
+Ein Perceptron hat mehrere binäre Inputs und einen binären Output. Im Beispiel hat das Perceptron $3$ Inputs, es kann aber ebenso weniger oder mehr Inputs besitzen.
+
+\includegraphics[width=0.7\textwidth, center]{../images/Benz/perceptron.png}
+
+Der Wert des Outputs ist abhängig von den Werte der Inputs. Rosenblatt führte für die Inputs Gewichte ein. Für jeden Input \(x_{j}\) gibt es ein bestimmtes Gewicht \(w_{j}\) aus dem Menge der natürlichen Zahlen. Ist die Summer der Multiplikation von Input mit dazugehörigem Gewicht größer als ein Schwellwert, ist der Output $1$. Ist die Summer kleiner als der Schwellwert, ist der Output $0$.
+
+\begin{align}
+	output &= \left \{ \begin{matrix}
+	0 \qquad falls \quad \sum_{j} x_{j}*w_{j} \leq Schwellwert \\ 
+	1 \qquad falls \quad \sum_{j} x_{j}*w_{j} > Schwellwert
+	\end{matrix} \right.
+\end{align}
+
+Mit den Funktionen des Perceptrons können schon einfache Problemstellungen logisch gelöst werden. Außerdem können mit Perceptronen logische Gatterschaltungen entworfen werden.
+
+Für schwierigere Probleme, wie die Erkennung von handgeschriebenen Ziffern, sind die Perceptronen jedoch nicht mächtig genug und nur sehr eingeschränkt benutzbar. Ein weiterer Nachteil der Perceptonen ist, dass ein Netzwerk aufgrund der natürlichen Zahlen nur schwer trainierbar ist.Deswegen werden heute für Neuronale Netzwerke andere Neuronen verwendet, die Grundidee dahinter ist jedoch auch nach 60 Jahren noch die gleiche.
+
 \section{Aktivierungen}
 Perceptronen bietet in ihrer Grundform die Möglichkeit, unbeschränkte Eingaben mit unbeschränkten Gewichten und zu verarbeiten. Ihre Ausgabe wiederum ist bekanntlich auf die diskreten Werte $1$ oder $0$ beschränkt. Um es Perceptronen zu ermöglichen, ein lernendes Netzwerk aufzubauen, ist es notwendig, dafür zu sorgen, dass die Ausgaben der Perceptronen beherrschbar bleiben. Ziel ist es, mit kleinen Veränderungen der Gewichte und Biases auch kleine Veränderungen der Outputs zu bewirken (vgl. \cite{NNADL_sigmoid_1}). Bei Verwendung der klassischen Perceptronen können kleine Änderungen der Weights $w$ und Biases $b$ nur Änderungen in der Ausgabe in Form von Sprüngen zwischen $0$ und $1$ und vice versa bewirken. \par
 Um nun auch kleine Änderungen in den Outputs eines Perceptrons zu gestatten, wird die Funktion zur Bestimmung dessen nach Gleichung \ref{eq:output_1} zu \ref{eq:output_2}] modifiziert. 
