@@ -1,11 +1,19 @@
 \documentclass[../main.tex]{subfiles}
 
 \begin{document}
+
+Unter einer General Purpose x86 CPU werden Prozessoren verstanden, die den Befehlssatz und die Architektur x86 verwenden. Diese Architektur wird von den beiden großen CPU Herstellern Intel und AMD verwendet und befindet sich somit in nahezu allen PCs und Laptops. 
+
+Heutige CPUs dieser Hersteller verstehen wesentlich mehr Instruktionen als der klassische x86-Befehlssatz. Somit bestehen heute einige Möglichkeiten, den Programmcode für diese Architektur zu optimieren. Eine dieser Optimierungsmöglichkeiten ist die Verwendung von SIMD-Instruktionen (Single Instruction, Multiple Data). Damit können mehrere Rechenoperationen gleichzeitig in speziellen Registern ausgeführt werden.
+
+Zur Entwicklung des Programms wurde Eclipse CDT verwendet. Als Compiler wurde gcc, ein weit verbreiteter Compiler mit einer großen Open Source Comunity. 
+
 \section{OpenMP (Open Multi Procesing)}
 
-Aktuelle CPUs im Arbeitsrechner, Laptop, Tablet oder Smartphone besitzen inzwischen mehrere CPU-Kerne. Um das volle Potenzial der dieser CPUs auszunutzen, ist es zwingend notwendig, Programme zu parallelisieren sodass Programmabschnitte auf mehreren Kernen gleichzeitig ausgeführt werden können.
-„Unter der Parallelisierung eines Programms versteht man, dass mehrere Teile einer Aufgabe gleichzeitig nebeneinander ausgeführt werden, um so die Gesamtaufgabe schneller als bei strikt serieller Verarbeitung zu beenden.“ (Günther)
-Mit der Programmierschnittstelle OpenMP ist es relativ einfach Programme, mithilfe von Direktiven die in den Programmcode eingefügt werden, parallel ablaufen zu lassen. OpenMP kann hierbei für die Programmiersprachen C, C++ und Fortran verwendet werden.
+Aktuelle CPUs, ob im Arbeitsrechner, Laptop, Tablet oder Smartphone, besitzen inzwischen mehrere CPU-Kerne. Um das volle Potenzial der dieser CPUs auszunutzen ist es zwingend notwendig, Programme zu parallelisieren, sodass Programmabschnitte auf mehreren Kernen gleichzeitig ausgeführt werden können.
+„Unter der Parallelisierung eines Programms versteht man, dass mehrere Teile einer Aufgabe gleichzeitig nebeneinander ausgeführt werden, um so die Gesamtaufgabe schneller als bei strikt serieller Verarbeitung zu beenden. (Günther)"
+
+Mit der Programmierschnittstelle OpenMP ist es relativ einfach Programme, mithilfe von Direktiven die in den Programmcode eingefügt werden, parallel ablaufen zu lassen. OpenMP ist hierbei für die Programmiersprachen C, C++ und Fortran verfügbar.
 
 \subsection{Programmiermodell}
 
@@ -63,9 +71,20 @@ o_{x-x\_pos,y-y\_pos,z\_pos/z} += a_{x,y,z}*w_{x\_pos,y\_pos,z\_pos}
 
 Durch diese Methode kann der Output-Tensor und die Gewichte im Cache liegen, die Speicherzugriffe erfolgen somit sehr schnell. Da kein neuer Speicher allokiert wird, muss nicht darauf gewartet werden bis der vergleichsweise sehr langsame Arbeitsspeicher den Speicherplatz freigibt und die Daten in den Cache geladen werden können. 
 
-Eine weitere Optimierung ergibt sich durch die Verwendung von AVX. Neue CPUs von Intel und AMD besitzen sogenannte AVX-Register. Auf diese Register können SIMD (Single Instruction Multiple Data) Operationen angewandt werden. Einer dieser SIMD Operationen ist die Multiplikation von float Zahlen.
-Je nach Prozessor sind die AVX-Register 256 oder 512 Byte groß. Somit lassen sich 8 beziehungsweise 16 Floats in einem Register unterbringen. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Durch Aufrufen des Befehls zur Multiplikation werden nun das n-te Float in Register 1 mit dem n-ten Float in Register 2 multipliziert und in ein Zielregister geschrieben.
+\subsection{Verwendung von AVX}
 
-Durch die Verwendung von AVX lässt sich somit die Zeit zur Multiplikation bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. 
+Eine weitere Optimierung ergibt sich durch die Verwendung von AVX (Advanced Vector Extensions).  Neue CPUs von Intel und AMD besitzen spezielle AVX-Register. Auf diese Register können SIMD (Single Instruction Multiple Data) Operationen angewandt werden. AVX ist der Nachfolger von SSE (Streaming SIMD Extension). Einer dieser SIMD Operationen ist die Multiplikation von float Zahlen.
+Je nach Generation des Prozessors sind die AVX-Register 256 oder 512 Bit groß. Bei älteren Prozessoren mit SSE haben die Register eine Größe von 128 Bit. Somit lassen sich bei neueren Generationen bis zu 16 Floats in einem Register unterbringen. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Durch Aufrufen des Befehls zur Multiplikation werden nun das n-te Float in Register a mit dem n-ten Float in Register b multipliziert und in ein Zielregister geschrieben.
+
+\includegraphics[width=\textwidth]{../images/Benz/avx.png}
+
+In der Grafik werden 8 Multiplikationen von Floats mit der Instruktion \texttt{\_mm256\_mul\_ps()} gleichzeitig ausgeführt. Die \texttt{256} gibt hierbei an, wie groß die Register sind. In diesem Fall sind die Register 256 Bit groß. Anschließend wird die Rechenart angegeben, hier eine Multiplikation (\texttt{mul}). Das \texttt{p} steht für "packed". Hierbei werden im Register mehrere Floats erwartet. Alternativ kann ein \texttt{s} für "single slot" angegeben werden, dann wird lediglich die hinterste Position des Registers für die Multiplikation verwendet. An letzter Stelle steht ein \texttt{s}. Dieses steht für "single precision", also für den Datentyp Float. Bei einem \texttt{d}an dieser Stelle werden Doubles angenommen, die Anzahl der gleichzeitigen Multiplikationen halbiert sich dadurch, dafür wächst der Wertebereich der Zahlen.
+
+Eine Übersicht aller SIMD-Instruktionen von Prozessoren mit aktueller x86-Architektur und findet sich unter \url{https://software.intel.com/sites/landingpage/IntrinsicsGuide}. 
+
+Durch die Verwendung von AVX lässt sich somit die Zeit zum Multiplizieren von mehreren Zahlen, im Vergleich zur standardmäßigen Multiplikation, bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. Durch das Compiler-Flag \texttt{-ftree-vectorizer-verbose=2} wird bei jeder Schleife ausgegeben, ob gcc den Code vektorisieren konnte und somit den Code mit SIMD-Instruktionen übersetzt hat.
+
+Die Instruktionen können jedoch auch explizit aufgerufen werden, sodass nicht der Compiler die Entscheidung übernimmt, wo und wie optimiert werden soll, sondern dies der Programmierer selbst Entscheiden kann. 
+
 
 \end{document}
