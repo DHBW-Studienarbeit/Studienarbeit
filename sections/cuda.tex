@@ -1,18 +1,130 @@
 \documentclass[../main.tex]{subfiles}
 
 \begin{document}
-\section{Grafikkarten zur Berechnung}
-\subsection{Stärken und Schwächen der Grafikkarte}
-\subsection{Unterschiede zur Berechnung mit CPU (Architektur)}
-\subsection{CUDA Programmierung (Besonderheiten)}
-\subsection{cuBLAS (Basic Linear Algebra Sub-Routines)}
-\section{Verwendete Hardware: Titan X}
-\section{Umsetzung}
-\subsection{Implementierung Convolution}
-\subsection{Implementierung ...}
-\subsection{Implementierung ...}
-\section{Performance}
-\subsection{Vergleich Sequentielle Implementierung}
-\subsection{Vergleich mit anderen Implementierungen (evtl. Tensorflow)}
+	Die letzte in dieser Studienarbeit betrachtete Hardwarearchitektur ist die Grafikkarte (GPU). Moderne GPUs werden nicht nur zur Berechnung der auf dem Monitor gezeigten Inhalte genutzt, sondern können aufgrund ihrer Architektur auch für komplexe mathematische bzw. numerische Berechnungen genutzt werden. Die Vorzüge der Grafikkarte als Hilfsmittel zur Implementierung eines CNN und allgemein für aufwändige Rechenoperationen soll Abschnitt \ref{sec:cuda_berechnung} dieses Kapitels erläutert werden. Außerdem soll die Programmierung der Rechenoperationen auf GPUs am Beispiel von NVIDIAs CUDA-Umgebung gezeigt werden. Die Abschnitte \ref{sec:cuda_titan} \nameref{sec:cuda_titan} und \ref{sec:cuda_umsetzung} \nameref{sec:cuda_umsetzung} zeigen dann die in dieser Arbeit genutzte Hardware sowie den verfolgten Implementierungsansatz für ein Convolutional Neural Network. Leider konnte die Implementierung eines funktionsfähigen und lernenden CNNs auf CUDA nicht in der vorgegebenen Zeit beendet werden. Das entstandene System ist nicht in der Lage, die Muster des MNIST-Datensatzes korrekt zu klassifizieren. Der Fehler muss dabei in der Implementierung liegen, da das verwendete Netz in anderen Implementierungen ihren Zweck erfüllt und gute Ergebnisse in der Klassifizierung erzielt.
+\section{Grafikkarten zur Berechnung} \label{sec:cuda_berechnung}
+Der ursprüngliche Zweck von Grafikkarten war die Shader-Berechnung und damit waren GPUs ein dediziertes Werkzeug zur Berechnung der auf dem Bildschirm dargestellten Inhalte. Da aufwändige grafische Darstellungen auch viele Berechnungen für die steigende Zahl an Pixel bedeuten, haben sich Grafikkarten zu hochparallelen Recheneinheiten entwickelt. Ihre Möglichkeiten sind dabei im Vergleich zu general-purpose CPUs eingeschränkt, jedoch sind sie auf komplexe Matrixoperationen im \emph{floating point} -Format ausgelegt. Dabei besitzen sie eine Vielzahl an Rechenkernen, womit es möglich wird, eine große Masse an mathematischen Operationen parallel zu bearbeiten. \par Dieser Abschnitt beschäftigt sich mit der Programmierung von mathematischen Anwendungen auf Grafikkarten, im speziellen mit der CUDA-Programmierung und weist im Punkt \ref{sec:cuda_cublas} auf eine hilfreiche, von NVIDIA bereitgestellte Bibliothek hin. \par 
+\subsection{Stärken und Schwächen der Grafikkarte} \label{sec:cuda_staerken}
+Wie bereits erwähnt, sind moderne Grafikkarten in der Lage komplexe mathematische Operationen äußerst effizient durchzuführen, da sie über eine hohe Zahl an Recheneinheiten verfügen. Aktuelle Hochleistungs-Grafikkarte besitzen mehrere Tausend Rechenwerke. Im Fall von NVIDIAs CUDA werden diese \emph{CUDA-Cores} genannt. Der offensichtliche Vorteil der Verwendung von Grafikkarten für aufwändige Berechnungen liegt in der gegebenen hohen Parallelität (vgl. \cite{NVIDIA_HOMEPAGE}). GPUs verfügen dabei aber nicht über den Instruktionsumfang gängiger CPUs. Generell kann festgestellt werden, das GPUs nicht für komplex verschachtelte Programmabläufe geeignet sind. Sie sind auf Rechenoperationen spezialisiert und eignen sich nur bedingt für andere Programmabläufe. Speziell besitzen Grafikkarten nur bedingte Möglichkeiten zur \emph{branch prediction} (Verzweigungsvorhersage). \par Außerdem benötigen GPUs immer eine CPU, die Rechenoperationen oder Programme auf der Grafikkarte startet und diese kontrolliert und koordiniert. Ein weiterer entscheidender Nachteil von modernen leistungsstarken Grafikkarten ist ihr hoher Preis. Im Vergleich zu hochwertigen CPUs sind Grafikkarten sehr teuer. Der Einsatz von GPUs für mathematische Berechnungen ist daher nur sinnvoll, wenn eine hohe Zahl an Rechenoperationen notwendig ist oder eine große Datenmenge im Sinne von Berechnungen verarbeitet werden muss. Das Problem muss sich dabei auch geeignet parallelisieren lassen, da sonst der Vorteil der Grafikkarte erlischt. \par Der nächste Abschnitt \ref{sec:cuda_unterschiede} soll die allgemeine Architektur einer modernen NVIDIA CUDA-fähigen Grafikkarte darstellen und damit den hier erwähnten Vorteil der Parallelität unterstreichen. \par 
+\subsection{Architektur moderner Grafikkarten} \label{sec:cuda_unterschiede}
+Prinzipiell sind die Architekturen der aktuellen NVIDIA Grafikkarten gleich aufgebaut. Eine Grafikkarte besteht dabei aus \emph{Streaming Multiprocessors (SM)}, den CUDA-Cores, einem dedizierten Graphikspeicher mit entsprechenden Caches und Speicher-Controllern. \par 
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/Riedle/architektur_pascal_komplett.png}
+	\caption{Grafikkartenarchitektur am Beispiel der Pascal-Architektur von NVIDIA ( \cite{Pascal_white})} \label{pic:cuda_pascal_compl}
+\end{figure}
+Abbildung \ref{pic:cuda_pascal_compl} zeigt die erwähnten Komponenten in ihrem Zusammenspiel am Beispiel der Pascal-Architektur von NVIDIA. Diese findet beispielsweise in Grafikkarten vom Typ GTX 1080 Ti Anwendung. Von oben beginnend, ist in Abbildung \ref{pic:cuda_pascal_compl} die PCIe-Schnittstelle zum Host-System gezeigt. Das Host-System bildet die bestimmende CPU. Darunter folgt die GigaThread-Engine. Weiter ist die GPU in GPCs (Graphic Processing Clusters) unterteilt. Diese besitzen je eine Raster Engine und greifen auf den selben L2-Cache zu (vgl. \cite{Pascal_white}). Die GPCs sind weiter unterteilt in je zehn SMs.  Die Streaming Multiprocessors teilen die Arbeit auf in dieser Architektur 128 CUDA-Cores auf. Jede SM besitzt dabei eine separaten L1-Cache. \par 
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/Riedle/architektur_pascal.png}
+	\caption{Aufbau eines Streaming Multiprocessors in der Pascal-Architektur (\cite{Pascal_white})} \label{pic:cuda_sm}
+\end{figure}
+In Abbildung \ref{pic:cuda_sm} ist eine detaillierte Darstellung einer SM gegeben (vgl. \cite{Pascal_white}). Ein Streaming Multiprocessor besteht dabei aus vier Blöcken, auf die sich die 128 CUDA-Cores pro SM aufteilen. In der Abbildung sind zur besseren Übersicht weniger Cores aufgetragen. Jeder dieser Blöcke besitzt einen dedizierten \emph{Instruction Buffer}, einen \emph{Warp Scheduler} und ein sogenanntes \emph{Register File}. Darin sind 16384 32-Bit Register abgebildet. \par 
+Ein Warp ist in CUDA eine Einheit von 32 Threads. Die CUDA-Struktur bildet alle erzeugten Threads in solche Warps ab und verteilt diese entsprechend innerhalb eines SM. Außerdem besitzt jede SM zwei L1-Caches und acht \emph{Texture Units}. Des weiteren besitzt jeder Streaming Multiprocessor einen dedizierten Shared-Memory-Bereich.\par 
+Nachdem nun in diesem Abschnitt auf die grundlegende Architektur von NVIDIAs Grafikkarten am Beispiel der Pascal-Architektur eingegangen wurde, soll im Abschnitt \ref{sec:cuda_programmierung} auf einige Aspekte der CUDA-Bibliothek und damit der Programmierung von Anwendungen auf CUDA-fähigen Grafikkarten eingegangen werden. Die als Zielhardware für diesen Projektteil verwendete NVIDIA GTX Titan X Grafikkarte ist mit der sogenannten Maxwell Architektur ausgestattet. Diese wird in Abschnitt \ref{sec:cuda_titan} näher erläutert. \par 
+\subsection{CUDA Programmierung} \label{sec:cuda_programmierung}
+Die CUDA-Programmierung basiert auf der Programmierung von sogenannten \emph{Kernels}. Ein Kernel stellt dabei eine Routine dar, welche auf einer GPU ausgeführt werden kann. \par 
+\begin{lstlisting}[language=C, caption=Minimaler Kernel, captionpos=b, label=listing:min_kernel]
+	__global__ void minimal_kernel(float* a, float* b, float* c, 
+									int size)
+	{
+		for(int i = 0; i < size; i++)
+		{
+			c[i] = a[i] + b[i];
+		}		
+	}
+\end{lstlisting}
+Listing \ref{listing:min_kernel} zeigt einen simplen CUDA-Kernel. Dieses Minimalbeispiel nimmt drei Zeiger auf \texttt{floats} und eine Ganzzahl als Parameter. Er addiert dabei einfach elementweise die Inhalte der Arrays \texttt{a} und \texttt{b} und speichert das Ergebnis im Array \texttt{c}. Im momentanen Zustand wird die \texttt{for} -Schleife seriell auf der GPU ausgeführt. Zur Parallelisierung später in diesem Abschnitt mehr. Wichtig ist hier der Specifier \texttt{\_\_global\_\_}. Er definiert einen CUDA-Kernel. Solche Kernels können nun vom Host aus auf der Grafikkarte gestartet werden (vgl. \cite{CUDA_GUIDE}). Der Host ist in jedem Fall die CPU und der darauf laufende Teil des Programmcodes. Mit dem Specifier \texttt{\_\_device\_\_} können Subroutinen auf der GPU deklariert werden. Solche Funktionen dürfen nur von Kernels auf der GPU aufgerufen werden. \\ Es ist zu beachten, dass die übergebenen Arrays \texttt{a}, \texttt{b} und \texttt{c} auf im Speicher der GPU liegen müssen. Die Grafikkarte hat keinen direkten Zugriff auf den RAM des Systems. Es muss also immer ein Transfer der Daten vom Host über die PCIe-Schnittstelle des Systems auf das Device (Grafikkarte) und zurück erfolgen. Dazu bietet die CUDA- Library spezielle Funktionen an. \par 
+Bei der CUDA- Library handelt es sich um eine C/C++ -Bibliothek. Diese stellt verschiedene Funktionen zur Kommunikation und Kontrolle der GPU vom Host aus zur Verfügung. Wichtige Funktionen stellen dabei die Methoden \texttt{cudaMalloc(..)}, \texttt{cudaFree(..)} und \texttt{cudaMemcpy(..)} dar. Damit wird der Zugriff auf den Speicher der Grafikkarte vom Host aus geregelt. \par 
+\begin{lstlisting}[language=C, caption=Aufruf des minimalen Kernels mit Speicherzugriff vom Host, captionpos=b, label=listing:min_kernel_host, breaklines]
+	float *A_host, *B_host, *C_host;
+	float *A_device, *B_device, *C_device;
+	
+	A_host = malloc(ARRAY_SIZE_D*sizeof(float));
+	B_host = malloc(ARRAY_SIZE_D*sizeof(float));
+	C_host = malloc(ARRAY_SIZE_D*sizeof(float));
+	
+	fillArrays(A_host, B_host, ARRAY_SIZE_D); /* Hilfsroutine, um den Arrays Werte zuzuweisen */
+	
+	cudaStatus_t cuda_state;
+	
+	cuda_state = cudaMalloc((void**) &A_device, ARRAY_SIZE_D*sizeof(float));
+	cuda_state = cudaMalloc((void**) &B_device, ARRAY_SIZE_D*sizeof(float));
+	cuda_state = cudaMalloc((void**) &C_device, ARRAY_SIZE_D*sizeof(float));
+	
+	cuda_state = cudaMemcpy((void*) A_device, (void*) A_host, ARRAY_SIZE_D*sizeof(float), cudaMemcpyHostToDevice);
+	cuda_state = cudaMemcpy((void*) B_device, (void*) B_host, ARRAY_SIZE_D*sizeof(float), cudaMemcpyHostToDevice);
+						
+	minimal_kernel<<<1,1>>>(A_device, B_device, C_device);
+	
+	cuda_state = cudaMemcpy((void*) C_host, (void*) C_device, ARRAY_SIZE_D*sizeof(float), cudaMemcpyDeviceToHost);
+	
+	cuda_state = cudaFree((void*) A_device);
+	cuda_state = cudaFree((void*) B_device);
+	cuda_state = cudaFree((void*) C_device);
+\end{lstlisting}
+In Listing \ref{listing:min_kernel_host} ist ein Beispiel zur Nutzung des in Listing \ref{listing:min_kernel} beschriebenen Kernels zu sehen. Es werden zuerst host-seitig Pointer zu Speicheradressen auf dem Host und auf der Grafikkarte angelegt. Mit Hilfe der bekannten C Standardfunktion \texttt{malloc(..)} werden Arrays von Gleitkommazahlen auf dem Host reserviert. In einer zu definierenden Hilfsfunktion werden diese Speicherbereiche mit sinnvollen Werten beschrieben. Danach wird Speicher auf der GPU reserviert. Dazu wird die Funktion \texttt{cudaMalloc(..)} aus der CUDA-Library verwendet. Diese weist dem bereits angelegten Pointer auf dem Host eine Speicheradresse auf der Grafikkarte zu. Als Parameter fordert diese Funktion den besagten Zeiger im Format \texttt{void**} und die Größe des benötigten Speicherbereichs in Byte. Das \texttt{void**} -Format macht sowohl einen Cast als auch eine erneute Referenzierung des Pointers notwendig. \\ Der Rückgabewert aller hier genannten Funktionen der CUDA-Bibliothek ist vom Typ \texttt{cudaStatus\_t}. Dieser informiert über den Erfolg des Funktionsaufruf. Er ist besonders hilfreich zu Debug-Zwecken. Beispielsweise werden auch fehlerhafte Aufrufe im Sinne der Übergabe von Speicheradressen auf dem Host in diesem Rückgabewert vermerkt. \par Nachdem der Speicherplatz für die Arrays nun auch auf der GPU reserviert wurde, müssen nun die Werte der auf dem Host bereits belegten Arrays auf die Grafikkarte übertragen werden. Dazu steht die Funktion \texttt{cudaMemcpy(..)} zur Verfügung. Diese regelt den Zugriff auf den Speicherbereich der GPU über die PCIe-Schnittstelle. Die Methode benötigt vier Paramater. Sie fordert zwei Pointer als Ziel- und Quelladresse in genannter Reihenfolge, sowie die Anzahl der zu übertragenen Bytes. Bis zu diesem Zeitpunkt stimmt die Syntax mit der aus der C-Standardbibliothek bekannten \texttt{memcpy(..)} -Methode überein. Der vierte Paramater der CUDA-Methode legt nun die Übertragungsrichtung fest. Er bestimmt, ob vom Host zur Grafikkarte (\texttt{cudaMemcpyHostToDevice}), von der GPU zum Host (\texttt{cudaMemcpyDeviceToHost}) oder von Speicheradressen auf der Grafikkarte zu anderen dort befindlichen Speicherbereichen (\texttt{cudaMemcpyDeviceToDevice}). \par Anschließend folgt der Kernel-Aufruf. Hier taucht die spezielle CUDA-Syntax zum Kernel-Aufruf auf. In CUDA müssen Kernel beim Aufruf zwei zusätzliche Parameter in drei spitzen Klammern (\texttt{<<<1,1>>>}) übergeben werden. Diese bestimmen die Parallelisierung des Kernels, in dem Sie die Anzahl der vom Kernel verwendeten Threads festlegen. \\ Threads sind dabei in CUDA in Blöcken organisiert. Der zweite angegebene Paramter in den spitzen Klammern legt dabei die Anzahl der vom Kernel zu startenden Threads pro Block fest. Der erste Parameter bestimmt die Anzahl der zu verwendenden Blöcke. Diese Blöcke sind dabei in einem sogenannten Grid organisiert (vgl. \cite{CUDA_INTRODUCTION}). \par 
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\linewidth]{../images/Riedle/cudaThreadGridExample.png}
+	\caption{Exemplarische Darstellung des Aufbaus eines Thread-Grids (\cite{CUDA_INTRODUCTION})} \label{pic:cuda_threadExample}
+\end{figure}
+In Abbildung \ref{pic:cuda_threadExample} ist ein exemplarischer Aufbau eines solchen Thread-Grids gezeigt. Darin sind je 256 Threads pro Block und 4096 Blöcke im Grid abgebildet. Der zugehörige Aufruf gestaltet sich wie in Listing \ref{listing:cuda_kernel_threadExample} gezeigt. \par 
+\begin{lstlisting}[language=C, caption=Aufruf des minimalen Kernels mit 4096 Blöcken à 256 Threads , captionpos=b, label=listing:cuda_kernel_threadExample, breaklines]
+	minimal_kernel<<<4096,256>>>(A_device, B_device, C_device);
+\end{lstlisting}
+In dem dort dargestellten Beispiel würde mit der in Listing \ref{listing:min_kernel} gezeigten Implementierung des \texttt{minimal\_kernel(..)} jeder der erzeugten Threads die gleichen Berechnungen redundant ausführen. Bis zu diesem Punkt ist keine konkrete Parallelisierung vorgenommen worden. Um nun die Berechnungen unter den Threads zu verteilen kann eine Modifizierung des Kernels nach Listing \ref{listing:cuda_parallel_kernel} vorgenommen werden. 
+\begin{lstlisting}[language=C, caption=Parallelisierte Variante des Kernels , captionpos=b, label=listing:listing:cuda_parallel_kernel, breaklines]
+	__global__ void minimal_kernel(float *a, float *b, float *c, int size)
+	{
+		int index = blockIdx.x * blockDim.x + threadIdx.x;
+		int stride = blockDim.x * gridDim.x;
+		
+		for(int i = index; i < size; i+=stride)
+		{
+			c[i] = a[i] + b[i];
+		}
+	}
+\end{lstlisting}
+Die hier verwendete Methode der Parallelisierung wird \emph{grid-stride-loop} genannt (vgl. \cite{CUDA_GRID_STRIDE}). Damit wird die Berechnung flexibel auf die angegebenen Thread-Parameter angepasst. Jeder Thread berechnet hierbei seinen Index nach der Formel \texttt{index = blockIdx.x * blockDim.x + threadIdx.x;}. Die CUDA-Library stellt dazu die Strukturen \texttt{blockIdx}, \texttt{blockDim} und \texttt{threadIdx} zur Verfügung. Darin sind die jeweiligen Thread-Parameter des Aufrufs gespeichert. In der \texttt{for} -Schleife wird die Laufvariable dann mit dem berechneten Index initialisiert. Die Sprungweite der Laufvariable wird durch die Variable \texttt{stride} bestimmt. Diese stellt die Anzahl aller verwendeten Threads in allen Blöcken dar. Sie ist damit das Produkt aus Anzahl der Blöcke und Anzahl der Threads pro Block. Durch die Nutzung der \emph{grid-stride-loop} wird nun jeder Wert des Ausgangsarrays \texttt{c} nur in einem Thread berechnet. Jeder Thread schreitet in der Schleife das Array mit der Anzahl aller Threads als Sprungweite ab, jeweils versetzt um seine Position im Grid. \par Damit sind nun die Grundlagen der CUDA-Programmierung und der damit möglichen Parallelisierung behandelt. In Abschnitt \ref{sec:cuda_umsetzung} wird nachfolgend beschrieben, wie diese Mechanismen auf das vorliegende Problem der Parallelisierung eines CNNs angewendet wurden. \par 
+\subsection{cuBLAS und cuRand} \label{sec:cuda_cublas}
+Die CUDA-Umgebung bietet neben der zwingend notwendigen CUDA-Runtime-Library weitere Bibliotheken zur Unterstützung an. Beispielsweise werden Bibliotheken für numerische Berechnungsmethoden oder auch die Implementierung von Deep Neural Networks angeboten. In diesem Projekt wurden zwei dieser Libraries verwendet, die cuBLAS-Bibliothek und die cuRand-Library in der Kernel-Version. \par Die cuBLAS-Bibliothek stellt eine auf NVIDIA GPUs spezialisierte Implementierung der BLAS-Funktionen zur Verfügung. Daraus wurde das Skalarprodukt für Vektoren benutzt. Die cuRand-Library bietet verschiedene Methoden zur Erzeugung von Zufallszahlen mit GPU-Unterstützung an. Sie existiert sowohl als Host-Version, als auch als für Kernel geeignete Version. Sie wurde verwendet, um in einem Kernel die Initialwerte des Gewichte und Biases des Neuronalen Netzes zufällig zu bestimmen. \par 
+\section{Verwendete Hardware: GTX Titan X} \label{sec:cuda_titan}
+Die Implementierung und Parallelisierung des Convolutional Neural Networks in dieser Arbeit ist auf die Verwendung auf Systemen mit einer NVIDIA Geforce GTX Titan X ausgelegt. Diese stand auf einem Server der Dualen Hochschule Baden-Württemberg Stuttgart zur Verfügung. Sie ist mit 3072 CUDA-Cores ausgestattet. Dies erlaubt einen äußert hohen Grad der Parallelisierung. Außerdem verfügt die GTX Titan X über 12 GB dedizierten VRAM. Dadurch ist es Möglich, große Datenmenge ohne häufige externe Speicherzugriffe zu verarbeiten. \par Die GTX Titan X ist dabei wie bereits in Abschnitt \ref{sec:cuda_unterschiede} \nameref{sec:cuda_unterschiede} erwähnt nach der Maxwell -Architektur aufgebaut. Auch diese Architektur stützt sich auf \emph{Streaming Multiprocessors}, welche hier SMM genannt werden. Die GTX Titan X verfügt dabei über 24 solcher SMMs mit je 128 CUDA-Cores. Auch hier teilen sich die SMMs die gleichen Komponenten, wie bereits in Abschnitt \ref{sec:cuda_unterschiede} anhand der Pascal-Architektur erläutert wurde. Der wesentliche Unterschied liegt im Aufbau er SMM. \par 
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.6\linewidth]{../images/Riedle/Maxwell_SMM_Single.png}
+	\caption{Aufbau einer Maxwell SMM \cite{CUDA_MAXWELL_White}} \label{pic:cuda_maxwell_smm_single}
+\end{figure}
+Diese Aufbau ist in Abbildung \ref{pic:cuda_maxwell_smm_single} dargestellt. Jede SMM verfügt über vier Warp-Scheduler. Damit ist es möglich, vier Warps pro SMM konkurrierend zu betreiben. Jeder Warp-Scheduler kontrolliert dabei 32 CUDA-Cores. Die L1-Caches unterscheiden sich nicht von der, der Pascal-Architektur. Auch die Register-Files sind unverändert, wodurch jedem Warp-Scheduler bzw. den darin organisierten CUDA-Cores 16384 32-Bit Register zur Verfügung stehen. Eine weitere Neuerung ist die Verlegung der \emph{PolyMorph Engine 3.0} direkt in die SMM. In der Pascal -Architektur befand sich diese noch außerhalb der SM. \par 
+Es wurden nun alle relevanten Grundlagen der Programmierung auf CUDA sowie der Aufbau und die Struktur der verwendeten Hardware erläutert. Der nächste Abschnitt widmet sich der Implementierung des in dieser Arbeit vorgestellten Convolutional Neural Network unter Zuhilfenahme einer NVIDIA Geforce GTX Titan X Grafikkarte. Es werden der gewählte Ansatz zur Parallelisierung der Berechnungen, ein Ansatz zur Umsetzung der Faltung und die daraus resultierenden Änderungen in den weiteren Schichten des Netzes dargestellt. \par 
+\section{Umsetzung und Parallelisierung} \label{sec:cuda_umsetzung} 
+
+\begin{tikzpicture}[scale=0.7]
+	\draw (0,1) rectangle (2,5); %input
+	\draw (3,1) rectangle (4,5); %conv1
+	\draw (2,6) rectangle (3,6.5); %weight 1
+	\draw (5,2.5) rectangle (8,3.5); %maxpooling1
+	\draw (4,6) rectangle (5.2, 8); %weight2
+	\draw (9,1) rectangle (10,2); %conv2
+	\draw (11, 2.5) rectangle (13, 2.7); %maxpooling 2
+	\draw (13, 6) rectangle (15, 8); %weight3 
+	\draw (16, 2.5) rectangle (18, 2.7); %fullyconnected1
+	\draw (19, 2.5) rectangle (19.4, 2.7); %fullyconnected2
+	\draw (18, 6) rectangle (18.3, 8); %weight4
+	
+	\node at (0,7) (weights) {Gewichte};
+	\node at (0,0) (input) {Input};
+	\node at (3,0) (conv1) {Conv1};
+	\node at (6,0) (max1) {MaxPooling1};
+	\node at (9,0) (conv2) {Conv2};
+	\node at (12,0) (max2) {MaxPooling2};
+	\node at (19,0) (final) {Final Layer};
+\end{tikzpicture}
+
+\subsection{Unrolling-based Convolution} \label{sec:cuda_unrolling_conv}
+\subsection{Input-Layer} \label{sec:cuda_input}
+\subsection{Convolutional-Layer} \label{sec:cuda_conv}
+\subsection{MaxPooling-Layer} \label{sec:cuda_pooling}
 
 \end{document}
