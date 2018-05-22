@@ -48,21 +48,19 @@ Die bei der Implementierung des Neuronalen Netzwerkes am meisten verwendete Dire
 
 Falls sich in einem parallelen Abschnitt nur eine for-Schleife befindet, kann die Direktive zusammengefasst werden. Die Anweisung heißt dann \texttt{\#pragma\ omp\ parallel\ for}. Die zwei unten stehenden Codes bewirkt somit dasselbe.
 
-\begin{lstlisting}
+\begin{lstlisting}[language=c++, caption=For innerhalb eines parallelen Abschnitts, captionpos=b, label=listing:for_in_parallel, frame=single, linewidth=\textwidth, breaklines=true]
 #pragma omp parallel
 {
-	#pragma omp for
-	for(...){
-	
-	}
+   #pragma omp for
+   for(...){
+   }
 }
 \end{lstlisting}
 
 
-\begin{lstlisting}
+\begin{lstlisting}[language=c++, caption=Kurzschreibweise einer parallelen For-Schleife, captionpos=b, label=listing:parallel_for, frame=single, linewidth=\textwidth, breaklines=true]
 #pragma omp parallel for
 for(...){
-
 }
 \end{lstlisting}
 
@@ -86,9 +84,14 @@ Zur Implementierung des Convolutional Neural Networks auf einer x86-Architektur 
 	\item AVX zur Multiplikation verwenden
 \end{itemize}
 
+Für die Inputs und Outputs aller Layer wurde die Klasse \texttt{Tensor} erstellt. Diese beinhaltet ein Array mit Floats. Die Größe des Arrays wird anhand der Dimension in x, y und z-Richtung beim Aufrufen des Constructors bestimmt. Die Klasse bietet Funktionen, um die Adresse für bestimmte Stelle zu finden.
+Im Programm gibt es eine abstrakte Klasse \texttt{Layer}. Diese beinhaltet die Methoden \texttt{forward()}, \texttt{backward()} und \texttt{fix\_weights()}. Die Klassen \texttt{ConvLayer}, \texttt{MaxPoolingLayer} und \texttt{FullyConnectedLayer} erben von dieser Klasse. Die Klasse \texttt{InputLayer}, die es noch in der seriellen Implementierung gab, gibt es nicht mehr. Alle Layer besitzen Zeiger auf ein \texttt{Tensor} für den Output, den Input, die Gewichte, die Biases und die jeweiligen Deltas dazu. Der Output des vorherigen Layers ist der Input des danach folgenden Layers.
+
+\textcolor{red}{TODO}
+
 \subsection{Optimierung des Convolutional Layers}
 
-Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer. Bei der seriellen Implementierung wird für jede Multiplikation ein neues Array beschrieben, welches dann mit einem Gewichts-Array multipliziert wird. Das Ergebnis dieser Multiplikation wird dann in eine temporäre Variable gespeichert, zu welcher dann ein Bias addiert wird um am Ende den Wert für den Output zu erhalten. Die Vorgehensweise ist in der Grafik unterhalb zu sehen.
+Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer. Bei der seriellen Implementierung wird für jede Multiplikation ein neues Array beschrieben, welches dann mit einem Gewichts-Array multipliziert wird. Das Ergebnis dieser Multiplikation wird dann in eine temporäre Variable gespeichert, zu welcher dann ein Bias addiert wird um am Ende den Wert für den Output zu erhalten. Die Vorgehensweise ist in der Grafik unterhalb zu sehen.Multiplikation mit AVX
 
 \includegraphics[width=\textwidth]{../images/Benz/Conv_Layer_Seriel.png} %Grafik Ablauf Convolutional Layer Seriell
 
@@ -122,13 +125,51 @@ Alternative Methoden zu Forward
 -> Quellcode
 -> Output-Layer durchgehen
 
-Aufbau Programm
--> Layer Vererben, gleiche Funktionen forward(), backward()
--> Noch im Programmcode ändern
+\begin{lstlisting}[language=c++, caption=Convolution: Activation durchgehen, captionpos=b, label=listing:conv_activation, frame=single, linewidth=\textwidth, breaklines=true]
+for(int pre_z_pos=0; pre_z_pos < activation->getZ(); pre_z_pos++){
+   for(int pre_y_pos = 0; pre_y_pos < activation->getY(); pre_y_pos++){
+      for(int pre_x_pos = 0; pre_x_pos < activation->getX();pre_x_pos++){
 
-AVX
--> set\_ps --> andersherum in Register
+         int start_x_rec=0;
+         int stop_x_rec=x_receptive-1;
+         if(pre_x_pos < x_receptive-1) stop_x_rec = pre_x_pos;
+         else if(pre_x_pos > activation->getX()-x_receptive) start_x_rec = x_receptive + pre_x_pos - activation->getX();
 
+         int start_y_rec=0;
+         int stop_y_rec=y_receptive-1;
+         if(pre_y_pos < y_receptive-1) stop_y_rec = pre_y_pos;
+         else if(pre_y_pos > activation->getY()-y_receptive) start_y_rec = y_receptive + pre_y_pos - activ[language=c++]ation->getY();
+         
+         for(int z_pos=pre_z_pos;z_pos < weight->getZ();z_pos+=activation->getZ()){
+            for(int y_rec = start_y_rec; y_rec <= stop_y_rec ; y_rec++){
+               for(int x_rec = start_x_rec; x_rec <= stop_x_rec ; x_rec++){
+                  output->getArray(z_pos/activation->getZ(), pre_y_pos-y_rec)[pre_x_pos-x_rec] += activation->getArray(pre_z_pos,pre_y_pos)[pre_x_pos] * weight->getArray(z_pos,y_rec)[x_rec];
+               }
+            }
+         }
+      }
+   }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=c++, caption=Convolution: Output durchgehen, captionpos=b, label=listing:conv_output, frame=single, linewidth=\textwidth, breaklines=true]
+for(int z_pos=0; z_pos < output->getZ(); z_pos++){
+   for(int y_pos = 0; y_pos < output->getY(); y_pos++){
+      for(int x_pos = 0; x_pos < output->getX();x_pos++){
+      
+         //TODO: Zeile noch nicht korrekt
+         for(int w_z_pos=0;w_z_pos < weight->getZ();w_z_pos+=activation->getZ()){
+         
+            for(int w_y_pos = 0; w_y_pos <= weight->getY() ; w_y_pos+){
+               for(int x_pos = 0; x_pos <= weight->getX() ; w_x_pos++){
+                  output->getArray(z_pos, y_pos)[x_pos] += activation->getArray(z_pos,y_pos+w_y_pos)[x_pos+w_x_pos] * weight->getArray(w_z_pos,w_y_rec)[w_x_rec];
+               }
+            }
+         }
+      }
+   }
+}
+\end{lstlisting}
 
 
 \subsection{Verwendung von AVX}
@@ -149,7 +190,7 @@ Die Instruktionen können jedoch auch explizit aufgerufen werden, sodass nicht d
 Für das Laden von Floats in ein AVX-Register gibt es mehrere Möglichkeiten. Um Werte an expliziter Stelle des Registers zu schreiben, gibt es den Befehl \texttt{\_mm256\_set\_ps(a8,a7,a6,a5,a4,a3,a2,a1)}. Der erste Parameter der Funktion wird hierbei an der letzten Stelle innerhalb des Registers geschrieben. Um einen Wert an alle Stellen des Registers zu schreiben, kann \texttt{\_mm256\_set1\_ps(a1)} verwendet werden. Mit \texttt{\_mm256\_load\_ps(addr)} kann eine Adresse übergeben werden und die folgenden Werte an dieser Adresse werden in das Register geschrieben. 
 Um das Ergebnis wieder als Floats anzusprechen, muss der Pointer zum Ergebnisregister als Pointer zu einem Float-Array gecastet werden.
 
-\begin{lstlisting}
+\begin{lstlisting}[language=c++, caption=Multiplikation mit AVX, captionpos=b, label=listing:avx, frame=single, linewidth=\textwidth, breaklines=true]
 float array[8]=[1,2,3,4,5,6,7,8];
 _m256 a = _mm256_set_ps(8,7,6,5,4,3,2,1);
 _m256 b = _mm256_load_ps(array);
