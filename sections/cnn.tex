@@ -68,11 +68,11 @@ Das Verhalten eines Pooling Layers weicht deutlich vom Verhalten anderer Layerty
 \subsection{Average Pooling}
 Die Gleichung \ref{eq:pooling_backprop_std} dient als Ausgangspunkt zur Bestimmung der gesuchten partiellen Ableitung. Wie allgemein bei der Backpropagation gilt auch hier: 
 \begin{equation} \label{eq:pooling_backprop_std}
-\frac{\partial C}{\partial x_i} = \sum\limits_{j} \frac{\partial C}{\partial y_j} \dot \frac{\partial y_j}{\partial x_i}
+\frac{\partial C}{\partial x_i} = \sum\limits_{j} \frac{\partial C}{\partial y_j} \cdot \frac{\partial y_j}{\partial x_i}
 \end{equation}
 Hier bezeichnet \(C\) das Ergebnis der Kostenfunktion, \(y_j\) alle einzelnen Aktivierungen am Ausgang des Pooling Layers und \(x\) eine beliebige Aktivierung am Eingang des Layers. Die Werte \(\frac{\partial C}{\partial y_j}\) sind nach der Backpropagation in der nachfolgenden Schicht bereits bekannt. \(\frac{\partial C}{\partial x_i}\) muss für jede Eingabe bestimmt werden, damit die Backpropagation im vorherigen Layer fortgesetzt werden kann. Die partiellen Ableitungn \(\frac{\partial y_j}{\partial x_i}\) muss dazu noch bestimmt werden. Zur Vereinfachung wird angenommen, dass sich die rechteckigen Poolingbereiche nicht überschneiden. Dies ist bei dem in dieser Arbeit verwendeten Modell der Fall, allerdings ist es nicht allgemein erforderlich. Mit dieser Vereinfachung ergibt sich, dass es zu jedem \(x_i\) nur ein \(y_j\) gibt, das von ebendiesem \(x_i\) abhängt, für das die Ableitung also nicht \(0\) ist. Darüber hinaus lässt sich zu jedem \(x_i\) eindeutig ein \(y_j\) bestimmen, das weiter betrachtet werden muss. Damit reduziert sich die obige Gleichung auf:
 \begin{equation} \label{eq:pooling_backprop_simplified}
-\frac{\partial C}{\partial x_i} = \frac{\partial C}{\partial y_j} \dot \frac{\partial y_j}{\partial x_i}
+\frac{\partial C}{\partial x_i} = \frac{\partial C}{\partial y_j} \cdot \frac{\partial y_j}{\partial x_i}
 \end{equation}
 Der Zusammenhang zwischen \(x_i\) und \(y_j\) ergibt sich aus der Gleichung \ref{eq:averagepooling}, wobei \(x_i\) und \(y_j\) nicht den Koordinaten, sondern stattdessen den Aktivierungen \(input_{m, n}\) bzw. \(output_{x, y}\) entsprechen. Durch Einsetzen ergibt sich also: 
 \begin{equation}
@@ -84,7 +84,7 @@ Der Betrag des Kreuzprodukts im Nenner entspricht der Anzahl der Aktivierungen d
 \end{equation}
 Durch Einsetzen in Gleichung \ref{eq:pooling_backprop_simplified} ergibt sich damit die finale Gleichung zur Backpropagation beim Average Pooling: 
 \begin{equation} \label{eq:pooling_backprop_avg_final}
-\frac{\partial C}{\partial x_i} = \frac{\partial C}{\partial y_j} \dot \frac{1}{|M\times{N}|}
+\frac{\partial C}{\partial x_i} = \frac{\partial C}{\partial y_j} \cdot \frac{1}{|M\times{N}|}
 \end{equation}
 Wird die Eingabe also in gleich große Cluster eingeteilt, so lässt sich der Fehler aller Aktivierungen im Eingang bestimmen, indem der Fehler der zugehörigen Ausgangsaktivierung duch die konstante Clustergröße dividiert wird. 
 \subsection{Max Pooling}
