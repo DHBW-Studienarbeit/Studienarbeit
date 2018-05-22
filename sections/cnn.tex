@@ -57,7 +57,7 @@ Beim Average Pooling wird das arithmetische Mittel aller betrachteten Aktivierun
 output_{x, y} = \frac{\sum\limits_{(m, n)\in{M_x}\times{N_y}} input_{m, n}}{|M_x\times{N_y}|}
 \end{equation}
 Die Mengen \(M_x\) und \(N_y\) beinhalten dabei jeweils die x- und y-Koordinaten der Eingaben aus dem relevanten Bereich. Die Inhalte dieser Mengen hängen von x bzw. y ab, somit lässt sich jeder Position in der Ausgabe ein eigener Eingabebereich zuordnen. 
-\subsection{Max Pooling}
+\subsection{Max Pooling} \label{maxpool_forward}
 Beim Max Pooling werden die betrachteten Aktivierungen des Eingangs miteinander verglichen und der größte Wert wird unverändert im Ausgang übernommen. Auch hier wird auf die erneute Anwendung einer Aktivierungsfunktion verzichtet. Formal lässt sich Max Pooling wie folgt beschreiben: 
 \begin{equation} \label{eq:maxpooling}
 output_{x, y} = max( {input_{m,n} | m \in M_x; n \in N_y})
@@ -66,9 +66,59 @@ Die obige Gleichung wirkt zwar auf menschliche Betrachter einfach, allerdings is
 \section{Anpassungen der Backpropagation}
 Das Verhalten eines Pooling Layers weicht deutlich vom Verhalten anderer Layertypen ab. Diese Abweichung macht es erforderlich, die zur Backpropagation erforderliche Fehlerweitergabe für diesen Layertyp gesondert zu betrachten. Partielle Ableitungen der Kostenfunktion nach den Gewichten sind an dieser Stelle nicht erforderlich, da weder Average Pooling, noch Max Pooling auf Gewichte zurückgreifen. Zwar existieren auch gewichtsbehaftete Poolingverfahren, (vgl. \cite{paperMixedPooling}) allerdings sind diese nicht Gegenstand dieser Arbeit. Für die Backpropagation eines Pooling Layers ist es also nur erforderlich, die partielle Ableitung der Kostenfunktion nach allen Eingaben zu bestimmen. Da sich die hier behandelten Verfahren deutlich voneinander unterscheiden, werden sie im Folgenden getrennt betrachtet. 
 \subsection{Average Pooling}
-Die Gleichung \ref{eq:averagepooling} dient als Ausgangspunkt zur Bestimmung der gesuchten partiellen Ableitung. 
+Die Gleichung \ref{eq:pooling_backprop_std} dient als Ausgangspunkt zur Bestimmung der gesuchten partiellen Ableitung. Wie allgemein bei der Backpropagation gilt auch hier: 
+\begin{equation} \label{eq:pooling_backprop_std}
+\frac{\partial C}{\partial x_i} = \sum\limits_{j} \frac{\partial C}{\partial y_j} \dot \frac{\partial y_j}{\partial x_i}
+\end{equation}
+Hier bezeichnet \(C\) das Ergebnis der Kostenfunktion, \(y_j\) alle einzelnen Aktivierungen am Ausgang des Pooling Layers und \(x\) eine beliebige Aktivierung am Eingang des Layers. Die Werte \(\frac{\partial C}{\partial y_j}\) sind nach der Backpropagation in der nachfolgenden Schicht bereits bekannt. \(\frac{\partial C}{\partial x_i}\) muss für jede Eingabe bestimmt werden, damit die Backpropagation im vorherigen Layer fortgesetzt werden kann. Die partiellen Ableitungn \(\frac{\partial y_j}{\partial x_i}\) muss dazu noch bestimmt werden. Zur Vereinfachung wird angenommen, dass sich die rechteckigen Poolingbereiche nicht überschneiden. Dies ist bei dem in dieser Arbeit verwendeten Modell der Fall, allerdings ist es nicht allgemein erforderlich. Mit dieser Vereinfachung ergibt sich, dass es zu jedem \(x_i\) nur ein \(y_j\) gibt, das von ebendiesem \(x_i\) abhängt, für das die Ableitung also nicht \(0\) ist. Darüber hinaus lässt sich zu jedem \(x_i\) eindeutig ein \(y_j\) bestimmen, das weiter betrachtet werden muss. Damit reduziert sich die obige Gleichung auf:
+\begin{equation} \label{eq:pooling_backprop_simplified}
+\frac{\partial C}{\partial x_i} = \frac{\partial C}{\partial y_j} \dot \frac{\partial y_j}{\partial x_i}
+\end{equation}
+Der Zusammenhang zwischen \(x_i\) und \(y_j\) ergibt sich aus der Gleichung \ref{eq:averagepooling}, wobei \(x_i\) und \(y_j\) nicht den Koordinaten, sondern stattdessen den Aktivierungen \(input_{m, n}\) bzw. \(output_{x, y}\) entsprechen. Durch Einsetzen ergibt sich also: 
+\begin{equation}
+y_j = \frac{\sum\limits_{k} x_k}{|M\times{N}|}
+\end{equation}
+Der Betrag des Kreuzprodukts im Nenner entspricht der Anzahl der Aktivierungen des mit \(y_j\) betrachteten Clusters im Eingang. Wird nun die partielle Ableitung \(\frac{\partial y_j}{\partial x_i}\) gebildet, so fallen alle Summanden außer \(x_k mit k=i\) weg. Dieser Summand wird durch den konstanten Betrag der Clustergröße dividiert, somit ergibt sich für die Ableitung
+\begin{equation}
+\frac{\partial y_j}{\partial x_i} = \frac{1}{|M\times{N}|}
+\end{equation}
+Durch Einsetzen in Gleichung \ref{eq:pooling_backprop_simplified} ergibt sich damit die finale Gleichung zur Backpropagation beim Average Pooling: 
+\begin{equation} \label{eq:pooling_backprop_avg_final}
+\frac{\partial C}{\partial x_i} = \frac{\partial C}{\partial y_j} \dot \frac{1}{|M\times{N}|}
+\end{equation}
+Wird die Eingabe also in gleich große Cluster eingeteilt, so lässt sich der Fehler aller Aktivierungen im Eingang bestimmen, indem der Fehler der zugehörigen Ausgangsaktivierung duch die konstante Clustergröße dividiert wird. 
 \subsection{Max Pooling}
-
+Wie zuvor beim Average Pooling gilt auch hier die Gleichung \ref{eq:pooling_backprop_std}. Außerdem wird wieder angenommen, dass sich die Cluster nicht überschneiden, womit auch Gleichung \ref{eq:pooling_backprop_simplified} ohne Änderungen auf Max Pooling übertragen werden kann. Die Ableitung \(\frac{\partial y_j}{\partial x_i}\) muss allerdings neu bestimmt werden, da sich die beiden Verfahren bei der Vorwärtsberechnung unterscheiden. 
+Die Vorwärtsberechnung für Max Pooling ist bereits durch Gleichung \ref{eq:maxpooling} formalisiert. Zunächst wird diese Gleichung unter Verwendung der Variablen \(x_i\) und \(y_j\) neu formuliert. Damit ergibt sich: 
+\begin{equation}
+y_j = max( {x_k | k \in (M_j \times N_j)})
+\end{equation}
+Der Index k steht in dieser Gleichung für alle möglichen Positionen von Eingaben in dem für die Ausgangsaktivierung \(y_j\) relevanten Cluster. Wie sich erkennen lässt, hat nur der größte betrachtete Eingang einen Einfluss auf das Ergebnis. Dies macht eine Fallunterscheidung bei der Bestimmung der Ableitung \(\frac{\partial y_j}{\partial x_i}\) notwendig: 
+\begin{equation}
+   \frac{\partial y_j}{\partial x_i} = 
+   \begin{cases}
+     1 \text{für } x_i = max( {x_k | k \in (M_j \times N_j)}) \\
+     0 \text{sonst}
+   \end{cases}
+\end{equation}
+Dies lässt sich in die zuvor bestimmte Gleichung \ref{eq:pooling_backprop_simplified} einsetzen. Dadurch ergibt sich die finale Gleichung zur Backpropagation beim Max Pooling: 
+\begin{equation} \label{eq:pooling_backprop_max_final}
+   \frac{\partial C}{\partial x_i} = 
+   \begin{cases}
+     \frac{\partial C}{\partial y_j} \text{für } x_i = max( {x_k | k \in (M_j \times N_j)}) \\
+     0 \text{sonst}
+   \end{cases}
+\end{equation}
+Wie zu erkennen ist, wird hier das Ergebnis der Vorwärtsoperation erneut verwendet. Die Position des Maximums kann daher zwischengespeichert werden, um den Aufwand für eine erneute Berechnung einzusparen. 
 \section{Vergleich}
+Sowohl Average Pooling, als auch Max Pooling erfüllen die Hauptanforderungen an eine Pooling-Schicht, nämlich eine Datenreduktion um einen durch die Clustergröße bestimmbaren Faktor. Unterschiede zwischen den beiden Verfahren zeigen sich in der Effizienz der Berechnung und der Qualität des Ergebnisses. 
+\subsection{Effizienz}
+Die Gleichung der Max-Pooling-Operation beinhaltet einen Operator zur Bestimmung des Maximums aus einer Eingabemenge. Wie bereits in Abschnitt \ref{maxpool_forward} erwähnt, ist die maschinelle Berechnung dieses Operators sehr ineffizient. Beim Average Pooling sind zwar mehr Rechenoperationen erforderlich, allerdings lassen sich diese mithilfe moderner CPUs und GPUs deutlich schneller berechnen. Dies ist möglich, weil viele Architekturen Möglichkeiten bereitstellen, gleichartige Operationen gleichzeitig mit einer größeren Menge von Operanden durchzuführen. 
+Darüber hinaus benötigt ein Max Pooling Layer zusätzlichen Speicher, um die Position des im Forward-Schritt ermittelten Maximums bis zur Backpropagation zwischenzuspeichern. Bei Prozessoren, die einen Cache besitzen, erhöht zusätzlicher Speicherbedarf die Wahrscheinlichkeit, dass im Cache abgelegte Daten überschrieben werden und erneut aus dem langsameren Arbeitsspeicher gelesen werden müssen. 
+Zusammenfassend lässt sich daher feststellen, dass die Berechnung von Average Pooling im Gegensatz zu Max Pooling auf den in dieser Arbeit verwendeten Architekturen performanter ausgeführt wird. Wie groß der tatsächliche Unterschied ist, hängt stark von den verwendeten Prozessoren und Implementierungen ab und lässt sich somit nicht allgemein feststellen. 
+\subsection{Qualität}
+Die Qualität des Ergebnisses einer Pooling-Operation hängt nicht nur von der Art der Operation selbst, sondern auch von der Art und Aufgabe des Modells, sowie den Eingabedaten ab. Tendenziell hat sich für die meisten bekannten Anwendungen im Bereich der Bildklassifizierung herausgestellt, dass Max Pooling bessere Ergebnisse liefert als Average Pooling. 
 
+Grund für diese Tendenz ist, dass sich die Ausgaben der beiden Verfahren bezüglich ihres Kontrastverhaltens unterscheiden. In den meisten Fällen geht dem Pooling Layer ein Convolution Layer voraus. Bei der Faltungsoperation wird nach bestimmten Bildabschnitten gesucht, die durch einen oder mehrere Filterkernel definiert sind. Wenn der gesuchte Bildabschnitt genau unter dem Filterkernel liegt, schlägt die Aktivierung des Perceptrons für diese Position stark aus. Bereits bei geringen Abweichungen passiert dies allerdings nicht mehr. Stattdessen stellt sich an diesen Positionen ein scheinbar zufälliges Rauschen ein. Bei der nachfolgenden Pooling-Operation sollen die starken Ausschläge möglichst erhalten bleiben, weil darin vermutlich die relevantesten Informationen enthalten sind. Beim Average Pooling werden nun die Featuremaps ähnlich wie mit einem Glättungsfilter derart verarbeitet, dass der Kontrast abnimmt. Somit nähern sich die Ausschläge und das Rauschen signifikant an, wodurch das Ergebnis des Poolings für nachfolgende Layer schwerer zu Verarbeiten wird. Beim Max Pooling werden positive Ausschläge unverändert weitergegeben, somit sind sie auch in nachfolgenden Layern deutlich vom Rest der Featuremap zu unterscheiden. 
+Aufgrund der bereits in vorhergenhenden Arbeiten festgestellten besseren Qualität der Ergebnisse bei der Klassifizierung von Ziffern aus der MNIST-Datenbank wird in dieser Arbeit Max Pooling verwendet. 
 \end{document}
