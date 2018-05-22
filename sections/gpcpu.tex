@@ -25,29 +25,51 @@ OpenMP erlaubt es auch, einen Fork innerhalb eines parallelen Programmabschnitte
 
 Im folgenden Abschnitt sind alle Programmbeispiele in C- oder C++-Syntax gehalten. Die selben Anweisungen sind auch in Fortran möglich, können sich jedoch in der Erscheinungsweise unterscheiden.
 
-Zuerst muss die Datei \texttt{omp.h} includiert werden. Anschließend kann mit \texttt{\#pragma\ omp\ <Klausel>} eine Compiler-Direktive angegeben werden. Mithilfe dieser Direktive und OpenMP wird der folgende Programmabschnitt parallel ausgeführt. Von Kompilern, die OpenMP nicht unterstützen, wird diese Zeile ignoriert. Somit kann der gleiche Programmcode als paralleles oder als serielles Programm compiliert werden.
+Zuerst muss die Datei \texttt{omp.h} includiert werden. Nun kann die Compiler-Direktive \texttt{\#pragma\ omp\ parallel} angegeben werden. Mithilfe dieser Direktive und OpenMP wird der folgende Programmabschnitt parallel ausgeführt. Von Compilern, die OpenMP nicht unterstützen, wird diese Zeile ignoriert. Somit kann der gleiche Programmcode als paralleles oder als serielles Programm compiliert werden.
 
 \subsubsection{Variablen}
 
-Variablen können entweder privat oder gemeinsam deklariert werden. Eine gemeinsame Variable kann von verschiedenen Threads genutzt werden, während eine private Variable für jeden Thread einen anderen Wert annehmen kann. Gemeinsame Variablen werden mit dem Parameter \texttt{shared(Liste\_der\_Variablen)} deklariert. In der Liste werden alle Variablen hineingeschrieben, die gemeinsam genutzt werden sollen. Die Variablen sind mit dem Wert initialisiert, die sie vor dem Fork hatten. Private Variablen können hingegen mit \texttt{private(Liste\_der\_Variablen)} deklariert werden.  Anders als die Gemeinsamen Variablen sind diese anfangs nicht initialisiert, mit Ausnahme von Objekten die einen Konstruktur besitzen und Indexvariablen von Schleifen.
-Soll der Wert, den die Variable vor Beginn der parallelen Ausführung hatte, verwendet werden, muss dafür der Parameter \texttt{firstprivate(Liste\_der\_Variablen)} verwendet werden. Soll der Wert der Variable vor dem Join im weiteren Programmablauf verwendet werden, muss hierfür der Parameter \texttt{lastprivate(Liste\_der\_Variablen)} verwendet werden.
+Variablen können entweder privat oder gemeinsam innerhalb eines parallelen Abschnitts deklariert werden. Eine gemeinsame Variable kann von verschiedenen Threads genutzt werden, während eine private Variable für jeden Thread einen anderen Wert annehmen kann. Gemeinsame Variablen werden mit dem Parameter \texttt{shared(Liste\_der\_Variablen)} deklariert. In der Liste werden alle Variablen hineingeschrieben, die gemeinsam genutzt werden sollen. Die Variablen sind mit dem Wert initialisiert, die sie vor dem Fork hatten. Private Variablen können hingegen mit \texttt{private(Liste\_der\_Variablen)} deklariert werden.  Anders als die Gemeinsamen Variablen sind diese anfangs nicht initialisiert, mit Ausnahme von Objekten die einen Konstruktur besitzen und Indexvariablen von Schleifen.
+Soll der Wert, den die Variable vor Beginn der parallelen Ausführung hatte, verwendet werden, muss dafür der Parameter \texttt{firstprivate(Liste\_der\_Variablen)} verwendet werden. Soll der Wert der Variable nach dem Join im weiteren Programmablauf verwendet werden, muss hierfür der Parameter \texttt{lastprivate(Liste\_der\_Variablen)} verwendet werden.
 
-Eine weitere Möglichkeit bei Variablen sind die Reduktionsvariablen. Diese funktionieren wie private Variablen, bis zum Zeitpunkt des Joins. Bei Reduktionsvariablen werden alle Werte der privaten Variablen durch eine Operation zusammengefasst. Bei dieser Operation kann es sich um die Addition, Subtraktion, Multiplikation, XOR, binäre und Logische Und-Verknüpfung oder binäre und Logische Oder-Verknüpfung handeln. Der Parameter für Reduktionsvariablen lautet \texttt{reduction( op:Liste\_der\_Variablen)}.
+Eine weitere Möglichkeit der Deklaration von Variablen ergibt sich durch die Reduktionsvariablen. Diese funktionieren wie private Variablen, bis zum Zeitpunkt des Joins. Bei Reduktionsvariablen werden alle Werte der privaten Variablen durch eine Operation zusammengefasst. Bei dieser Operation kann es sich um die Addition, Subtraktion, Multiplikation, XOR, binäre und Logische Und-Verknüpfung oder binäre und Logische Oder-Verknüpfung handeln. Der Parameter für Reduktionsvariablen lautet \texttt{reduction( op:Liste\_der\_Variablen)}.
 „Wird eine Variable in keiner der Deklarationen erwähnt, wird sie standardmäßig als gemeinsame Variable deklariert. Eine Ausnahme hiervon bildet die bei der Aufteilung einer Schleife auf mehrere Threads erzeugte Index-Variable der Schleife, die standardmäßig als private Variable deklariert wird. Soll ein explizites Deklarieren jeder im parallelen Bereich verwendeten Variable erzwungen werden, so wird der Direktive zusätzlich der Parameter default(none) hinzugefügt.“ (Uni München)
+
+Das Default-Verhalten lässt sich jedoch auch ändern, dafür gibt es die Datenzugriffsklausel \texttt{default(zugriffsverhalten)}. Hier kann auch der Wert \texttt{node} angegeben werden. Dann gibt es für jede Variable, für die nicht explizit das Zugriffsverhalten angegeben wurde, beim compilieren einen Fehler.
+Variablen können nur in einer Datenzugriffsklausel vorkommen, also nicht gleichzeitig privat und shared sein.
 
 \subsubsection{Parallelisierung}
 
-Parallele Abschnitte des Programms beginnen immer mit der Direktiven \texttt{\#pragma omp parallel}. Der Folgende Code wird dann parallel ausgeführt, der Code kann beschränkt werden durch die Verwendung von geschwungenen Klammern. Der Auszuführende Code ist hierbei in jedem Thread derselbe. 
+Parallele Abschnitte des Programms beginnen immer mit der Direktiven \texttt{\#pragma omp parallel}. Der Folgende Code wird von geschwungenen Klammern umschlossen und wird dann parallel ausgeführt. Der Auszuführende Code ist hierbei, ohne Angabe weiterer Direktiven, in jedem Thread derselbe. 
 
 Die Nummer des Threads, der den Aktuellen Code ausführt, kann mit \texttt{omp\_get\_thread\_num} ermittelt werden. Die Gesamtanzahl der Threads wird bei Aufruf von \texttt{omp\_get\_num\_threads} zurückgegeben.
 
-Die bei der Implementierung des Neuronalen Netzwerkes am meisten verwendete Direktive von OpenMP ist \texttt{\#pragma omp parallel for [Parameter]}. Diese muss vor eine For-Schleife gesetzt werden. Die For-Schleife wird dann parallel abgearbeitet. Eine Bedingung zur Verwendung dieser Direktiven ist, dass die Anzahl der Durchläufe schon vor Beginn des ersten Durchlaufs berechenbar sein muss. Außerdem darf kein Ergebnis eines vorherigen Schleifendurchlaufs zur Berechnung eines Ergebnis in einem späteren Durchlauf benötigt werden.
-Als Parameter kann zum Einen die Schedule-Strategie angegeben werden. 
-Für eine statische Strategie, bei der eine Bestimmte Anzahl an Interationen statisch auf die Threads verteilt werden, gibt es den Parameter \texttt{schedule(static, [Blockgröße])}. Die Blockgröße kann Optional angegeben werden. Wird sie nicht angegeben, werden alle Iterationen durch die Anzahl der Threads geteilt und diese Anzahl verwendet.
-Bei einer dynamischen Verteilung muss der Parameter \texttt{schedule(dynamic, [Blockgröße])} angegeben werden. Sollten einige Iterationen länger dauern als andere, werden Iterationen auf andere Threads verlegt um zu vermeiden, dass gegen Ende der Abarbeitung ein einziger Thread noch rechnen muss, währenddessen alle anderen Threads schon lange fertig sind.
-Die letzte Strategie in OpenMP kann mit der Direktiven \texttt{schedule(guided, [Blockgröße])} verwendet werden. Hierbei werden die Blöcke zur Abarbeitung mit fortschreiten der Zeit immer kleiner. Iterationsblöcke, die schneller fertig werden, bekommen dann einen größeren zweiten Block als Iterationen, die später ihren ersten Block abgearbeitet haben. Die Anzahl der Iterationsblöcke soll dadurch verringert werden.
-Bei Beendigung der Schleife wird normalerweise darauf gewartet, bis alle Threads beendet werden können. Soll dies nicht geschehen, kann der Parameter \texttt{nowait} angegeben werden.
-Ein weiterer Parameter zur Parallelisierung einer For-Schleife ist \texttt{ordered}. Dabei werden die Iterationen in der Reihenfolge ausgeführt, wie Sie bei paralleler Ausführung ausgeführt würden. Bei diesem Parameter kann noch ein Block mit dem Direktiv \texttt{\#pragma omp ordered} unterhalb der For-Schleife stehen. Dieser wird dann auch in der gleichen Reihenfolge ausgeführt.
+Die bei der Implementierung des Neuronalen Netzwerkes am meisten verwendete Direktive von OpenMP ist \texttt{\#pragma omp for [Parameter]}. Diese muss vor eine For-Schleife innerhalb eines parallelen Abschnittes gesetzt werden. Die For-Schleife wird dann parallel abgearbeitet, wobei jeder Thread nur eine Teilmenge der Iterationen abarbeitet. Eine Bedingung zur Verwendung dieser Direktiven ist, dass die Schleife in kanonischer Form vorliegt. Die Anzahl der Durchläufe muss dafür schon vor Beginn des ersten Durchlaufs berechenbar sein, außerdem darf kein Ergebnis eines Schleifendurchlaufs zur Berechnung eines Ergebnis in einem anderen Durchlauf benötigt werden. Die Operation zum Vergleichen der Zählvariable darf nur \texttt{>, >=, <} oder texttt{<=} annehmen und die Zählvariable darf nicht durch eine Multiplikation oder Division erhöht oder verringert werden
+
+Falls sich in einem parallelen Abschnitt nur eine for-Schleife befindet, kann die Direktive zusammengefasst werden. Die Anweisung heißt dann \texttt{\#pragma\ omp\ parallel\ for}. Die zwei unten stehenden Codes bewirkt somit dasselbe.
+
+\begin{lstlisting}[language=c++, caption=For innerhalb eines parallelen Abschnitts, captionpos=b, label=listing:for_in_parallel, frame=single, linewidth=\textwidth, breaklines=true]
+#pragma omp parallel
+{
+   #pragma omp for
+   for(...){
+   }
+}
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=c++, caption=Kurzschreibweise einer parallelen For-Schleife, captionpos=b, label=listing:parallel_for, frame=single, linewidth=\textwidth, breaklines=true]
+#pragma omp parallel for
+for(...){
+}
+\end{lstlisting}
+
+Als Parameter kann die Schedule-Strategie angegeben werden. Für eine statische Strategie, bei der eine Bestimmte Anzahl an Interationen statisch auf die Threads verteilt werden, gibt es den Parameter \texttt{schedule(static, [Blockgröße])}. Die Blockgröße kann Optional angegeben werden. Wird sie nicht angegeben, werden alle Iterationen durch die Anzahl der Threads geteilt und diese Anzahl verwendet. Wird die Blockgröße angegeben, darf diese nicht so klein sein, dass nicht alle Iterationen der Schleife von den Threads abgearbeitet werden. Der letzte Thread darf, wenn die Iterationsanzahl nicht gleichmäßig aufgeteilt werden kann, weniger Iterationen ausführen.
+Bei einer dynamischen Verteilung muss der Parameter \texttt{schedule(dynamic, [Blockgröße])} angegeben werden. Sollten einige Iterationen länger dauern als andere, werden Iterationen auf andere Threads verlegt um zu vermeiden, dass gegen Ende der Abarbeitung ein einziger Thread noch rechnen muss, währenddessen alle anderen Threads schon lange fertig sind. Die Blockgröße muss hier kleiner gewählt werden, um diesen Vorteil zu erhalten.
+Die letzte Strategie in OpenMP kann mit der Direktiven \texttt{schedule(guided, [Blockgröße])} verwendet werden. Dies ist eine spezielle Form der dynamischen Strategie. Hierbei werden die Blöcke zur Abarbeitung exponentiell immer kleiner. Iterationsblöcke, die schneller fertig werden, bekommen deshalb einen größeren zweiten Block als Iterationen, die später ihren ersten Block abgearbeitet haben. Die Anzahl der Iterationsblöcke soll dadurch verringert werden.
+Dynamische Ablaufpläne haben den Vorteil, dass die Threads auch bei unterschiedlicher Abarbeitungsdauer der Iterationen ungefähr gleichzeitig fertig werden mit ihren Berechnungen. Dennoch hat die statische Strategie ihre Daseinsberechtigung. Durch die dynamische Verwaltung entsteht ein großer Verwaltungsaufwand, da die Threads synchronisiert werden müssen und neue Iterationen den Threads zugewiesen werden müssen. Bei der statischen Strategie hingegen wird dieser Aufwand nicht benötigt.
+An Ende der Schleife wird normalerweise darauf gewartet, bis alle Threads beendet werden können. Soll dies nicht geschehen, kann der Parameter \texttt{nowait} angegeben werden.
+Ein weiterer Parameter zur Parallelisierung einer For-Schleife ist \texttt{ordered}. Dabei werden die Iterationen in der Reihenfolge ausgeführt, wie Sie bei paralleler Ausführung ausgeführt würden. Bei diesem Parameter kann noch ein Block mit dem Direktiv \texttt{\#pragma omp ordered} unterhalb der For-Schleife stehen. Dieser wird dann auch in der richtigen Reihenfolge ausgeführt.
 
 Weitere Funktionen zur Parallelisierung mit Hilfe von OpenMP wurden für diese Arbeit nicht verwendet und werden deswegen im Folgenden nur kurz erwähnt.
 Für verschiedenen Bereiche, die unabhängig voneinander sind und parallel ausgeführt werden sollen, kann \texttt{\#pragma imp parallel section [Parameter]} verwendet werden.
@@ -62,13 +84,18 @@ Zur Implementierung des Convolutional Neural Networks auf einer x86-Architektur 
 	\item AVX zur Multiplikation verwenden
 \end{itemize}
 
+Für die Inputs und Outputs aller Layer wurde die Klasse \texttt{Tensor} erstellt. Diese beinhaltet ein Array mit Floats. Die Größe des Arrays wird anhand der Dimension in x, y und z-Richtung beim Aufrufen des Constructors bestimmt. Die Klasse bietet Funktionen, um die Adresse für bestimmte Stelle zu finden.
+Im Programm gibt es eine abstrakte Klasse \texttt{Layer}. Diese beinhaltet die Methoden \texttt{forward()}, \texttt{backward()} und \texttt{fix\_weights()}. Die Klassen \texttt{ConvLayer}, \texttt{MaxPoolingLayer} und \texttt{FullyConnectedLayer} erben von dieser Klasse. Die Klasse \texttt{InputLayer}, die es noch in der seriellen Implementierung gab, gibt es nicht mehr. Alle Layer besitzen Zeiger auf ein \texttt{Tensor} für den Output, den Input, die Gewichte, die Biases und die jeweiligen Deltas dazu. Der Output des vorherigen Layers ist der Input des danach folgenden Layers.
+
+\textcolor{red}{TODO}
+
 \subsection{Optimierung des Convolutional Layers}
 
-Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer. Bei der seriellen Implementierung wird für jede Multiplikation ein neues Array beschrieben, welches dann mit einem Gewichts-Array multipliziert wird. Das Ergebnis dieser Multiplikation wird dann in eine temporäre Variable gespeichert, zu welcher dann ein Bias addiert wird um am Ende den Wert für den Output zu erhalten. Die Vorgehensweise ist in der Grafik unterhalb zu sehen.
+Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer. Bei der seriellen Implementierung wird für jede Multiplikation ein neues Array beschrieben, welches dann mit einem Gewichts-Array multipliziert wird. Das Ergebnis dieser Multiplikation wird dann in eine temporäre Variable gespeichert, zu welcher dann ein Bias addiert wird um am Ende den Wert für den Output zu erhalten. Die Vorgehensweise ist in der Grafik unterhalb zu sehen.Multiplikation mit AVX
 
 \includegraphics[width=\textwidth]{../images/Benz/Conv_Layer_Seriel.png} %Grafik Ablauf Convolutional Layer Seriell
 
-Aus einem Input wird der Bereich ausgewählt, der mit dem Kern gefaltet werden soll. Die entsprechenden Werte werden in einen neuen Vektor geschrieben. Dieser Vektor wird anschließend mit dem Kern Multipliziert. Das Ergebnis wird in einen temporären Vektor geschrieben und anschließend noch mit dem Bias-Vektor elementweiße multipliziert. Die dabei entstehenden Werte werden an die richtige Stelle der Output-Matrix geschrieben.
+Aus einem Input wird der Bereich ausgewählt, der mit dem Kern gefaltet werden soll. Die entsprechenden Werte werden in einen neuen Vektor geschrieben. Dieser Vektor wird anschließend mit dem Kern Multipliziert. Das Ergebnis wird in einen temporären Vektor geschrieben und anschließend noch mit dem Bias-Vektor elementweise addiert. Die dabei entstehenden Werte werden an die richtige Stelle der Output-Matrix geschrieben.
 
 Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies kann sich vermeiden lassen, indem man die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt in den Zielspeicherplatz schreibt. 
 
@@ -92,28 +119,62 @@ Der Convolutional Layer kann auf mehrere Arten Implementiert werden. Immer müss
 
 Die wohl einfachste Art der Implementierung ist die, dass die äußeren For-Schleifen den Index des Outputs bestimmen und die inneren den Index des Inputs und des Faltungskerns. Bei dieser Art kann der Index des Outputs als Anfangsindex des Inputs verwendet werden. Die inneren Schleifen erzeugen einen Offset zwischen 0 und der Breite/Länge des Faltungskerns. Dieser Offset wird auf die Variable des Outputs addiert und erzeugt somit die Positionen des Inputs, die für den Output verwendet werden.
 
-OpenMP
--> kritische Abschnitte
--> Barriere
--> ...
 
 Alternative Methoden zu Forward
 -> Gewichte durchgehen
 -> Quellcode
 -> Output-Layer durchgehen
 
-Aufbau Programm
--> Layer Vererben, gleiche Funktionen forward(), backward()
--> Noch im Programmcode ändern
+\begin{lstlisting}[language=c++, caption=Convolution: Activation durchgehen, captionpos=b, label=listing:conv_activation, frame=single, linewidth=\textwidth, breaklines=true]
+for(int pre_z_pos=0; pre_z_pos < activation->getZ(); pre_z_pos++){
+   for(int pre_y_pos = 0; pre_y_pos < activation->getY(); pre_y_pos++){
+      for(int pre_x_pos = 0; pre_x_pos < activation->getX();pre_x_pos++){
 
-AVX
--> set\_ps --> andersherum in Register
+         int start_x_rec=0;
+         int stop_x_rec=x_receptive-1;
+         if(pre_x_pos < x_receptive-1) stop_x_rec = pre_x_pos;
+         else if(pre_x_pos > activation->getX()-x_receptive) start_x_rec = x_receptive + pre_x_pos - activation->getX();
 
+         int start_y_rec=0;
+         int stop_y_rec=y_receptive-1;
+         if(pre_y_pos < y_receptive-1) stop_y_rec = pre_y_pos;
+         else if(pre_y_pos > activation->getY()-y_receptive) start_y_rec = y_receptive + pre_y_pos - activ[language=c++]ation->getY();
+         
+         for(int z_pos=pre_z_pos;z_pos < weight->getZ();z_pos+=activation->getZ()){
+            for(int y_rec = start_y_rec; y_rec <= stop_y_rec ; y_rec++){
+               for(int x_rec = start_x_rec; x_rec <= stop_x_rec ; x_rec++){
+                  output->getArray(z_pos/activation->getZ(), pre_y_pos-y_rec)[pre_x_pos-x_rec] += activation->getArray(pre_z_pos,pre_y_pos)[pre_x_pos] * weight->getArray(z_pos,y_rec)[x_rec];
+               }
+            }
+         }
+      }
+   }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=c++, caption=Convolution: Output durchgehen, captionpos=b, label=listing:conv_output, frame=single, linewidth=\textwidth, breaklines=true]
+for(int z_pos=0; z_pos < output->getZ(); z_pos++){
+   for(int y_pos = 0; y_pos < output->getY(); y_pos++){
+      for(int x_pos = 0; x_pos < output->getX();x_pos++){
+      
+         //TODO: Zeile noch nicht korrekt
+         for(int w_z_pos=0;w_z_pos < weight->getZ();w_z_pos+=activation->getZ()){
+         
+            for(int w_y_pos = 0; w_y_pos <= weight->getY() ; w_y_pos+){
+               for(int x_pos = 0; x_pos <= weight->getX() ; w_x_pos++){
+                  output->getArray(z_pos, y_pos)[x_pos] += activation->getArray(z_pos,y_pos+w_y_pos)[x_pos+w_x_pos] * weight->getArray(w_z_pos,w_y_rec)[w_x_rec];
+               }
+            }
+         }
+      }
+   }
+}
+\end{lstlisting}
 
 
 \subsection{Verwendung von AVX}
 
-Eine weitere Optimierung ergibt sich durch die Verwendung von AVX (Advanced Vector Extensions).  Neue CPUs von Intel und AMD besitzen spezielle AVX-Register. Auf diese Register können SIMD (Single Instruction Multiple Data) Operationen angewandt werden. AVX ist der Nachfolger von SSE (Streaming SIMD Extension). Einer dieser SIMD Operationen ist die Multiplikation von float Zahlen.
+Eine weitere Optimierung ergibt sich durch die Verwendung von AVX (Advanced Vector Extensions).  Neue CPUs von Intel und AMD besitzen spezielle AVX-Register. Auf diese Register können SIMD (Single Instruction Multiple Data) Operationen angewandt werden. AVX ist der Nachfolger von SSE (Streaming SIMD Extension). Einer dieser SIMD Operationen ist die Multiplikation von Zahlen des Datentyps Float.
 Je nach Generation des Prozessors sind die AVX-Register 256 oder 512 Bit groß. Bei älteren Prozessoren mit SSE haben die Register eine Größe von 128 Bit. Somit lassen sich bei neueren Generationen bis zu 16 Floats in einem Register unterbringen. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Durch Aufrufen des Befehls zur Multiplikation werden nun das n-te Float in Register a mit dem n-ten Float in Register b multipliziert und in ein Zielregister geschrieben.
 
 \includegraphics[width=\textwidth]{../images/Benz/avx.png}
@@ -122,9 +183,19 @@ In der Grafik werden 8 Multiplikationen von Floats mit der Instruktion \texttt{\
 
 Eine Übersicht aller SIMD-Instruktionen von Prozessoren mit aktueller x86-Architektur und findet sich unter \url{https://software.intel.com/sites/landingpage/IntrinsicsGuide}. 
 
-Durch die Verwendung von AVX lässt sich somit die Zeit zum Multiplizieren von mehreren Zahlen, im Vergleich zur standardmäßigen Multiplikation, bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. Durch das Compiler-Flag \texttt{-ftree-vectorizer-verbose=2} wird bei jeder Schleife ausgegeben, ob gcc den Code vektorisieren konnte und somit den Code mit SIMD-Instruktionen übersetzt hat.
+Durch die Verwendung von AVX lässt sich die Zeit zum Multiplizieren von mehreren Zahlen, im Vergleich zur standardmäßigen Multiplikation, prinzipiell bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 (Compilerflag \texttt{-O3}) for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. Durch das Compiler-Flag \texttt{-ftree-vectorizer-verbose=2} wird bei jeder Schleife ausgegeben, ob gcc den Code vektorisieren konnte und somit den Code mit SIMD-Instruktionen übersetzt hat oder nicht.
 
 Die Instruktionen können jedoch auch explizit aufgerufen werden, sodass nicht der Compiler die Entscheidung übernimmt, wo und wie optimiert werden soll, sondern dies der Programmierer selbst Entscheiden kann. 
 
+Für das Laden von Floats in ein AVX-Register gibt es mehrere Möglichkeiten. Um Werte an expliziter Stelle des Registers zu schreiben, gibt es den Befehl \texttt{\_mm256\_set\_ps(a8,a7,a6,a5,a4,a3,a2,a1)}. Der erste Parameter der Funktion wird hierbei an der letzten Stelle innerhalb des Registers geschrieben. Um einen Wert an alle Stellen des Registers zu schreiben, kann \texttt{\_mm256\_set1\_ps(a1)} verwendet werden. Mit \texttt{\_mm256\_load\_ps(addr)} kann eine Adresse übergeben werden und die folgenden Werte an dieser Adresse werden in das Register geschrieben. 
+Um das Ergebnis wieder als Floats anzusprechen, muss der Pointer zum Ergebnisregister als Pointer zu einem Float-Array gecastet werden.
 
+\begin{lstlisting}[language=c++, caption=Multiplikation mit AVX, captionpos=b, label=listing:avx, frame=single, linewidth=\textwidth, breaklines=true]
+float array[8]=[1,2,3,4,5,6,7,8];
+_m256 a = _mm256_set_ps(8,7,6,5,4,3,2,1);
+_m256 b = _mm256_load_ps(array);
+_m256 res = _mm256_mul_ps(a,b);
+float *f = (float*)&res;
+\end{lstlisting}
+An Adresse \texttt{f} stehen nun die ersten 8 Quadratzahlen, die alle mit der Instruktion \texttt{\_mm256\_mul\_ps} auf einmal errechnet wurden.
 \end{document}
