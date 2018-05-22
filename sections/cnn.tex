@@ -52,15 +52,21 @@ y_{out} &= y_{in} - F_y + 1
 Unter der Bedingung, dass \(x_{in} >> F_x\) und \(y_{in} >> F_y\) ergibt sich die Näherung \(\frac{S_{out}}{S_{in}} = \frac{f_{out}}{f_{in}}\). Die Anzahl der Neuronen einer Faltungsschicht gegenüber der des vorherigen Layers steigt bei der Faltungsoperation demzufolge annähernd proportional zur Anzahl der Featuremaps. 
 Mit der Datenmenge im Ausgang der Faltungsschicht steigt auch die Zahl der Aktivierungen, die in den nachfolgenden Schichten bearbeitet werden müssen. Dies stellt einen beträchtlichen Mehraufwand dar und kann zu einer signifikanten Steigerung der Rechenzeit und des Speicherbedarfs führen. Um diesen Mehraufwand zu reduzieren, sind die Faltungsschichten in den meisten Implementierungen von CNNs von sogenannten Pooling-Schichten gefolgt. Beim Pooling wird jede Featuremap in rechteckige Abschnitte unterteilt, die dann jeweils auf einen neuen Aktivierungswert abgebildet werden. Für diese Abbildung gibt es mehrere Methoden, einige davon werden im folgenden Abschnitt näher erläutert. 
 \subsection{Average Pooling}
-Beim Average Pooling wird das Arithmetische Mittel aller betrachteten Aktivierungen des Eingangs berechnet. Das Ergebnis wird direkt als Ausgang übernommen. Auf die Verwendung einer Aktivierungsfunktion wird verzichtet, da das Ergebnis durch die Verwendung des arithmetischen Mittels sowieso im für die Aktivierungsfunktion des letzten Layers üblichen Zahlenbereich liegt. Demnach gilt für die Vorwärtsberechnung eines Average Pooling Layers: 
-
-
+Beim Average Pooling wird das arithmetische Mittel aller betrachteten Aktivierungen des Eingangs berechnet. Das Ergebnis wird direkt als Ausgang übernommen. Auf die Verwendung einer Aktivierungsfunktion wird verzichtet, da das Ergebnis durch die Verwendung des arithmetischen Mittels sowieso im für die Aktivierungsfunktion des letzten Layers üblichen Zahlenbereich liegt. Demnach gilt für die Vorwärtsberechnung eines Average Pooling Layers: 
+\begin{equation} \label{eq:averagepooling}
+output_{x, y} = \frac{\sum\limits_{(m, n)\in{M_x}\times{N_y}} input_{m, n}}{|M_x\times{N_y}|}
+\end{equation}
+Die Mengen \(M_x\) und \(N_y\) beinhalten dabei jeweils die x- und y-Koordinaten der Eingaben aus dem relevanten Bereich. Die Inhalte dieser Mengen hängen von x bzw. y ab, somit lässt sich jeder Position in der Ausgabe ein eigener Eingabebereich zuordnen. 
 \subsection{Max Pooling}
-Beim Max Pooling werden die betrachteten Aktivierungen des Eingangs miteinander verglichen und der größte Wert wird unverändert im Ausgang übernommen. Auch hier wird auf die erneute Anwendung einer Aktivierungsfunktion verzichtet. 
+Beim Max Pooling werden die betrachteten Aktivierungen des Eingangs miteinander verglichen und der größte Wert wird unverändert im Ausgang übernommen. Auch hier wird auf die erneute Anwendung einer Aktivierungsfunktion verzichtet. Formal lässt sich Max Pooling wie folgt beschreiben: 
+\begin{equation} \label{eq:maxpooling}
+output_{x, y} = max( {input_{m,n} | m \in M_x; n \in N_y})
+\end{equation}
+Die obige Gleichung wirkt zwar auf menschliche Betrachter einfach, allerdings ist sie maschinell nicht ohne Schwierigkeiten zu lösen. Der Grund dafür ist, dass zur Berechnung der max-Operation Verzweigungen nötig sind. Bei den meisten modernen CPU-Archtikturen werden diese deutlich langsamer ausgeführt als rein sequentielle Operationen. 
 \section{Anpassungen der Backpropagation}
-Das Verhalten eines Pooling Layers weicht deutlich vom Verhalten anderer Layertypen ab. Diese Abweichung macht es erforderlich, die zur Backpropagation erforderliche Fehlerweitergabe für diesen Layertyp gesondert zu betrachten. Partielle Ableitungen der Kostenfunktion nach den Gewichten sind an dieser Stelle nicht erforderlich, da weder Average Pooling, noch Max Pooling auf Gewichte zurückgreifen. Zwar existieren auch gewichtsbehaftete Poolingverfahren, (vgl. \cite{paperMixedPooling}) allerdings sind diese nicht Gegenstand dieser Arbeit. Da sich die in hier behandelten Verfahren auch untereinander unterscheiden, werden sie im Folgenden getrennt betrachtet. 
+Das Verhalten eines Pooling Layers weicht deutlich vom Verhalten anderer Layertypen ab. Diese Abweichung macht es erforderlich, die zur Backpropagation erforderliche Fehlerweitergabe für diesen Layertyp gesondert zu betrachten. Partielle Ableitungen der Kostenfunktion nach den Gewichten sind an dieser Stelle nicht erforderlich, da weder Average Pooling, noch Max Pooling auf Gewichte zurückgreifen. Zwar existieren auch gewichtsbehaftete Poolingverfahren, (vgl. \cite{paperMixedPooling}) allerdings sind diese nicht Gegenstand dieser Arbeit. Für die Backpropagation eines Pooling Layers ist es also nur erforderlich, die partielle Ableitung der Kostenfunktion nach allen Eingaben zu bestimmen. Da sich die hier behandelten Verfahren deutlich voneinander unterscheiden, werden sie im Folgenden getrennt betrachtet. 
 \subsection{Average Pooling}
-
+Die Gleichung \ref{eq:averagepooling} dient als Ausgangspunkt zur Bestimmung der gesuchten partiellen Ableitung. 
 \subsection{Max Pooling}
 
 \section{Vergleich}
