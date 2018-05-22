@@ -6,12 +6,12 @@ Unter einer General Purpose x86 CPU werden Prozessoren verstanden, die den Befeh
 
 Heutige CPUs dieser Hersteller verstehen wesentlich mehr Instruktionen als der klassische x86-Befehlssatz. Somit bestehen heute einige Möglichkeiten, den Programmcode für diese Architektur zu optimieren. Eine dieser Optimierungsmöglichkeiten ist die Verwendung von SIMD-Instruktionen (Single Instruction, Multiple Data). Damit können mehrere Rechenoperationen gleichzeitig in speziellen Registern ausgeführt werden.
 
-Zur Entwicklung des Programms wurde Eclipse CDT verwendet. Als Compiler wurde gcc, ein weit verbreiteter Compiler mit einer großen Open Source Comunity. 
+Zur Entwicklung des Programms wurde Eclipse CDT verwendet und als Compiler gcc, ein weit verbreiteter Compiler mit einer großen Open Source Comunity. 
 
 \section{OpenMP (Open Multi Procesing)}
 
 Aktuelle CPUs, ob im Arbeitsrechner, Laptop, Tablet oder Smartphone, besitzen inzwischen mehrere CPU-Kerne. Um das volle Potenzial der dieser CPUs auszunutzen ist es zwingend notwendig, Programme zu parallelisieren, sodass Programmabschnitte auf mehreren Kernen gleichzeitig ausgeführt werden können.
-„Unter der Parallelisierung eines Programms versteht man, dass mehrere Teile einer Aufgabe gleichzeitig nebeneinander ausgeführt werden, um so die Gesamtaufgabe schneller als bei strikt serieller Verarbeitung zu beenden. (Günther)"
+„Unter der Parallelisierung eines Programms versteht man, dass mehrere Teile einer Aufgabe gleichzeitig nebeneinander ausgeführt werden, um so die Gesamtaufgabe schneller als bei strikt serieller Verarbeitung zu beenden. \cite{articleOpenMP}"
 
 Mit der Programmierschnittstelle OpenMP ist es relativ einfach Programme, mithilfe von Direktiven die in den Programmcode eingefügt werden, parallel ablaufen zu lassen. OpenMP ist hierbei für die Programmiersprachen C, C++ und Fortran verfügbar.
 
@@ -37,6 +37,21 @@ Eine weitere Möglichkeit bei Variablen sind die Reduktionsvariablen. Diese funk
 
 \subsubsection{Parallelisierung}
 
+Parallele Abschnitte des Programms beginnen immer mit der Direktiven \texttt{\#pragma omp parallel}. Der Folgende Code wird dann parallel ausgeführt, der Code kann beschränkt werden durch die Verwendung von geschwungenen Klammern. Der Auszuführende Code ist hierbei in jedem Thread derselbe. 
+
+Die Nummer des Threads, der den Aktuellen Code ausführt, kann mit \texttt{omp\_get\_thread\_num} ermittelt werden. Die Gesamtanzahl der Threads wird bei Aufruf von \texttt{omp\_get\_num\_threads} zurückgegeben.
+
+Die bei der Implementierung des Neuronalen Netzwerkes am meisten verwendete Direktive von OpenMP ist \texttt{\#pragma omp parallel for [Parameter]}. Diese muss vor eine For-Schleife gesetzt werden. Die For-Schleife wird dann parallel abgearbeitet. Eine Bedingung zur Verwendung dieser Direktiven ist, dass die Anzahl der Durchläufe schon vor Beginn des ersten Durchlaufs berechenbar sein muss. Außerdem darf kein Ergebnis eines vorherigen Schleifendurchlaufs zur Berechnung eines Ergebnis in einem späteren Durchlauf benötigt werden.
+Als Parameter kann zum Einen die Schedule-Strategie angegeben werden. 
+Für eine statische Strategie, bei der eine Bestimmte Anzahl an Interationen statisch auf die Threads verteilt werden, gibt es den Parameter \texttt{schedule(static, [Blockgröße])}. Die Blockgröße kann Optional angegeben werden. Wird sie nicht angegeben, werden alle Iterationen durch die Anzahl der Threads geteilt und diese Anzahl verwendet.
+Bei einer dynamischen Verteilung muss der Parameter \texttt{schedule(dynamic, [Blockgröße])} angegeben werden. Sollten einige Iterationen länger dauern als andere, werden Iterationen auf andere Threads verlegt um zu vermeiden, dass gegen Ende der Abarbeitung ein einziger Thread noch rechnen muss, währenddessen alle anderen Threads schon lange fertig sind.
+Die letzte Strategie in OpenMP kann mit der Direktiven \texttt{schedule(guided, [Blockgröße])} verwendet werden. Hierbei werden die Blöcke zur Abarbeitung mit fortschreiten der Zeit immer kleiner. Iterationsblöcke, die schneller fertig werden, bekommen dann einen größeren zweiten Block als Iterationen, die später ihren ersten Block abgearbeitet haben. Die Anzahl der Iterationsblöcke soll dadurch verringert werden.
+Bei Beendigung der Schleife wird normalerweise darauf gewartet, bis alle Threads beendet werden können. Soll dies nicht geschehen, kann der Parameter \texttt{nowait} angegeben werden.
+Ein weiterer Parameter zur Parallelisierung einer For-Schleife ist \texttt{ordered}. Dabei werden die Iterationen in der Reihenfolge ausgeführt, wie Sie bei paralleler Ausführung ausgeführt würden. Bei diesem Parameter kann noch ein Block mit dem Direktiv \texttt{\#pragma omp ordered} unterhalb der For-Schleife stehen. Dieser wird dann auch in der gleichen Reihenfolge ausgeführt.
+
+Weitere Funktionen zur Parallelisierung mit Hilfe von OpenMP wurden für diese Arbeit nicht verwendet und werden deswegen im Folgenden nur kurz erwähnt.
+Für verschiedenen Bereiche, die unabhängig voneinander sind und parallel ausgeführt werden sollen, kann \texttt{\#pragma imp parallel section [Parameter]} verwendet werden.
+Für kritische Abschnitte gibt es \texttt{\#pragma omp critical [(name)]} und eine Barriere kann mit \texttt{\#pragma omp barrier} erzeugt werden.
 
 \section{Umsetzung}
 
@@ -70,6 +85,31 @@ o_{x-x\_pos,y-y\_pos,z\_pos/z} += a_{x,y,z}*w_{x\_pos,y\_pos,z\_pos}
 \end{equation}
 
 Durch diese Methode kann der Output-Tensor und die Gewichte im Cache liegen, die Speicherzugriffe erfolgen somit sehr schnell. Da kein neuer Speicher allokiert wird, muss nicht darauf gewartet werden bis der vergleichsweise sehr langsame Arbeitsspeicher den Speicherplatz freigibt und die Daten in den Cache geladen werden können. 
+
+\subsubsection{Alternative Implementierung des Convolutional Layers}
+
+Der Convolutional Layer kann auf mehrere Arten Implementiert werden. Immer müssen mehrere For-Schleifen ineinander die Faltung mit dem Faltungskern ausführen, dazu werden die einzelnen Zählvariablen als Index des Input und des Outputs verwendet. Es kann jedoch entschieden werden, welche Variable für welchen Indes verwendet wird.
+
+Die wohl einfachste Art der Implementierung ist die, dass die äußeren For-Schleifen den Index des Outputs bestimmen und die inneren den Index des Inputs und des Faltungskerns. Bei dieser Art kann der Index des Outputs als Anfangsindex des Inputs verwendet werden. Die inneren Schleifen erzeugen einen Offset zwischen 0 und der Breite/Länge des Faltungskerns. Dieser Offset wird auf die Variable des Outputs addiert und erzeugt somit die Positionen des Inputs, die für den Output verwendet werden.
+
+OpenMP
+-> kritische Abschnitte
+-> Barriere
+-> ...
+
+Alternative Methoden zu Forward
+-> Gewichte durchgehen
+-> Quellcode
+-> Output-Layer durchgehen
+
+Aufbau Programm
+-> Layer Vererben, gleiche Funktionen forward(), backward()
+-> Noch im Programmcode ändern
+
+AVX
+-> set\_ps --> andersherum in Register
+
+
 
 \subsection{Verwendung von AVX}
 
