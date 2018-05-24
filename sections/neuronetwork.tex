@@ -8,8 +8,15 @@ Der größte Unterschied zwischen der klassischen Programmierung und der Erstell
 Große Firmen wie Google, Facebook oder Apple sammeln hierfür schon seit Jahren Daten von Nutzern, um diese für das Trainieren von Netzwerken zu verwenden und dadurch neue Geschäftsmodelle zu entwickeln.
 
 \section{Funktionsweise Perceptron}
-Die Idee der Perceptrons wurde von Frank Rosenblatt 1958 in einem Paper erläutert (\cite{paperPerceptron}). 
-Ein Perceptron hat mehrere binäre Inputs und einen binären Output. Im Beispiel hat das Perceptron $3$ Inputs, es kann aber ebenso weniger oder mehr Inputs besitzen.
+Die Idee der Perceptrons wurde von Frank Rosenblatt das erste mal 1958 in einem Paper erläutert (\cite{paperPerceptron}). Der Unterschied zu noch älteren Modellen war, dass sich die Struktur eines Netzes beim Modell von Rosenblatt nicht während des Lernens ändert, sondern sich nur die Schwellwerte der einzelnen Perzeptronen ändern. Zuvor wurde versucht, den Lernvorgang eines biologischen Gehirns möglichst genau auf dem PC zu Implementieren. Später wurde das Modell von Minsky und Papert untersucht und vereinfacht. (\cite{articleTheorieDerNeuronalenNetze})
+
+\includegraphics[width=\textwidth]{../images/Benz/Netz_Perceptron.png}
+
+Die Grafik zeigt ein Netz mit Perzeptronen nach Rosenblatt. Auf die Retina, dem Fachbegriff für die biologische Netzhaut eines Auges, wird ein Bild abgebildet. Die Retinapunkte sind mit der ersten Schicht von Perceptronen fest, deterministisch verbunden. Die Verbindungen zur zweiten Schicht, der Verknüpfungsschicht, sind zufällig gewählt. Ebenso sind auch die Verbindungen zwischen der zweiten und der dritten Schicht zufällig gewählt.
+
+"Die Idee von Rosenblatt war, mit der Verknüpfungsregion bestimmte Muster in der Eingabe aus den Retinapunkten zu erkennen und die entsprechende Reaktion zu steuern. Der Lernalgorithmus muß die notwendigen Gewichte finden, um Muster aus der Retina mit Reaktionen zu assoziieren. (\cite{articleTheorieDerNeuronalenNetze})"
+
+Das Modell von Rosenblatt wurde im Lauf der Zeit immer weiter reduzier. Wird heute von Perceptronen gesprochen, besitzen diese mehrere binäre Inputs und einen binären Output. (\cite{neuralNetworksAndDeepLearning}) In der Grafik unterhalb hat das Perceptron $3$ Inputs, es kann aber ebenso weniger oder mehr Inputs besitzen.
 
 \includegraphics[width=0.7\textwidth, center]{../images/Benz/perceptron.png}
 
@@ -22,9 +29,9 @@ Der Wert des Outputs ist abhängig von den Werte der Inputs. Rosenblatt führte 
 	\end{matrix} \right.
 \end{align}
 
-Mit den Funktionen des Perceptrons können schon einfache Problemstellungen logisch gelöst werden. Außerdem können mit Perceptronen logische Gatterschaltungen entworfen werden.
+Mit den Funktionen des Perceptrons können schon einfache Problemstellungen logisch gelöst werden. Außerdem können mit diesen Perceptronen logische Gatterschaltungen entworfen werden, da sie sich ähnlich wie digitale Bausteine verhalten. \cite{neuralNetworksAndDeepLearning}
 
-Für schwierigere Probleme, wie die Erkennung von handgeschriebenen Ziffern, sind die Perceptronen jedoch nicht mächtig genug und nur sehr eingeschränkt benutzbar. Ein weiterer Nachteil der Perceptonen ist, dass ein Netzwerk aufgrund der natürlichen Zahlen nur schwer trainierbar ist.Deswegen werden heute für Neuronale Netzwerke andere Neuronen verwendet, die Grundidee dahinter ist jedoch auch nach 60 Jahren noch die gleiche.
+Für schwierigere Probleme, wie die Erkennung von handgeschriebenen Ziffern, sind die Perceptronen jedoch nicht mächtig genug und nur sehr eingeschränkt benutzbar. Ein weiterer Nachteil der Perceptonen ist, dass ein Netzwerk, aufgrund der verwendeten natürlichen Zahlen, nur schwer trainierbar ist. Deswegen werden heute für Neuronale Netzwerke andere Neuronen verwendet, die Grundidee dahinter ist jedoch auch nach 60 Jahren noch die gleiche.
 
 \section{Aktivierungen}
 Perceptronen bietet in ihrer Grundform die Möglichkeit, unbeschränkte Eingaben mit unbeschränkten Gewichten und zu verarbeiten. Ihre Ausgabe wiederum ist bekanntlich auf die diskreten Werte $1$ oder $0$ beschränkt. Um es Perceptronen zu ermöglichen, ein lernendes Netzwerk aufzubauen, ist es notwendig, dafür zu sorgen, dass die Ausgaben der Perceptronen beherrschbar bleiben. Ziel ist es, mit kleinen Veränderungen der Gewichte und Biases auch kleine Veränderungen der Outputs zu bewirken (vgl. \cite{NNADL_sigmoid_1}). Bei Verwendung der klassischen Perceptronen können kleine Änderungen der Weights $w$ und Biases $b$ nur Änderungen in der Ausgabe in Form von Sprüngen zwischen $0$ und $1$ und vice versa bewirken. \par
