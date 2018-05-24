@@ -1,5 +1,117 @@
 \documentclass[../main.tex]{subfiles}
 
 \begin{document}
+Im Gegensatz zu General Purpose CPUs lassen sich mithilfe von Coprozessoren deutlich höhere Parallelisierungsgrade erzielen. Gegenüber GPUs haben sie den Vorteil, dass die Kerne eines Coprozessors einen größeren Befehlssatz verfügen, mit dem sie nicht nur Befehlssequenzen, sondern auch bedingte Sprünge ausführen können. Mit GPUs lässt sich dagegen eine weitaus höhere Parallelität erreichen. Mit der Max Pooling-Operation ist die Fähigkeit von Coprozessoren, auch Code mit Verzweigungen parallel auszuführen, von Nutzen. 
+In dieser Arbeit soll auch eine Implementierung des CNNs erstellt werden, die Berechnungen an Coprozessoren. Ein direkter Vergleich dieser Implementierung mit Tensorflow hat nur bedingte Aussagekraft, da Tensorflow laut der offiziellen Dokumentation nur für den Einsatz auf CPUs, GPUs und TPUs optimiert ist. Coprozessoren werden von Tensorflow dagegen nicht explizit unterstützt. (vgl. \cite{aboutTensorflow}) Ein Vergleich zwischen dieser Implementierung und den anderen beiden in dieser Arbeit behandelten optimierten Implementierungen lässt allerdings Rückschlüsse darauf ziehen, wie der Performancegewinn unter Zuhilfenahme eines Coprozessors einzuordnen ist. 
+
+Die DHBW Stuttgart besitzt einen Server, der mit einer General Purpose CPU(Intel Xeon E5-2650L) und zwei Coprozessoren(Intel Xeon Phi) ausgestattet ist. Beim Xeon Phi handelt es sich um eine PCIe-Erweiterungskarte, auf der eine spezielle CPU mit 60 Kernen und einer Taktrate von 1\,GHz, sowie ein DDR5-Arbeitsspeicher mit einer Größe von 8\,GB verbaut sind. Für diese Arbeit wurde den Studenten freundlicherweise ein SSH-Zugang zur Verfügung gestellt. Die in diesem Kapitel betrachtete Implementierung soll auf dem genannten Server getestet und dementsprechend auch für dessen Prozessoren optimiert werden. 
+
+\section{Xeon Phi Coprozessor}
+
+\subsection{Geschichte}
+
+\subsection{MIC-Archtektur}
+
+\subsection{Anbindung an das Hostsystem}
+
+
+
+\section{Nutzungsmodelle}
+
+\subsection{Automatic Offload}
+
+\subsection{Compiler-Assisted Offload}
+
+\subsection{Native}
+
+
+
+\section{Compiler}
+
+
+\section{Multithreading}
+
+\subsection{PThread}
+
+\subsection{OpenMP}
+
+\subsection{OpenMPI}
+
+\subsection{Intel Threading Blocks}
+
+
+
+\section{Intel Math Kernel Library}
+
+\subsection{BLAS}
+
+\subsection{Vector Mathematical Functions}
+
+
+
+\section{Grundlegende Überlegungen}
+
+\subsection{Parallelisierung}
+
+\subsection{Programmiersprache}
+
+\subsection{Datenorganisation}
+
+\subsection{Convolution und Pooling}
+
+\subsection{Buildsystem}
+
+
+
+\section{Skript zur Netzwerkbeschreibung}
+
+\subsection{Klasseneinteilung}
+
+\subsection{Netzwerk}
+
+\subsection{Layertypen}
+
+\subsection{Schnittstellen zwischen Schichten}
+
+\subsection{Netzwerkmodell}
+
+\subsection{Netzwerkkonfiguration}
+
+
+
+\section{Programm zur Netzwerksimulation}
+
+\subsection{Moduleinteilung}
+
+\subsection{Netzwerkmodell}
+
+\subsection{Netzwerkinitialisierung}
+
+\subsection{Hilfsfunktionen}
+
+\subsection{Verhaltensbeschreibung der Layer}
+
+\subsection{Datenfluss beim Fully Connected Layer}
+
+\subsection{Organisation der Faltungsoperation}
+
+\subsection{Implementierung des Poolings}
+
+\subsection{Programmfluss}
+
+
+
+\section{Anpassung der Netzwerkkonfiguration}
+
+\subsection{Startgewichte}
+
+\subsection{Reduzierung der Lernrate}
+
+\subsection{Fehlerreduktion beim Convolution Layer}
+
+
+\section{Vergleich mit Tensorflow}
+
+
 
 \end{document}
