@@ -1,5 +1,7 @@
 \documentclass[../main.tex]{subfiles}
 
+\lstMakeShortInline[columns=fixed, basicstyle=\bfseries]|
+
 \begin{document}
 Im Gegensatz zu General Purpose CPUs lassen sich mithilfe von Coprozessoren deutlich höhere Parallelisierungsgrade erzielen. Gegenüber GPUs haben sie den Vorteil, dass die Kerne eines Coprozessors einen größeren Befehlssatz verfügen, mit dem sie nicht nur Befehlssequenzen, sondern auch bedingte Sprünge ausführen können. Mit GPUs lässt sich dagegen eine weitaus höhere Parallelität erreichen. Mit der Max Pooling-Operation ist die Fähigkeit von Coprozessoren, auch Code mit Verzweigungen parallel auszuführen, von Nutzen. 
 In dieser Arbeit soll auch eine Implementierung des CNNs erstellt werden, die Berechnungen an Coprozessoren. Ein direkter Vergleich dieser Implementierung mit Tensorflow hat nur bedingte Aussagekraft, da Tensorflow laut der offiziellen Dokumentation nur für den Einsatz auf CPUs, GPUs und TPUs optimiert ist. Coprozessoren werden von Tensorflow dagegen nicht explizit unterstützt. (vgl. \cite{aboutTensorflow}) Ein Vergleich zwischen dieser Implementierung und den anderen beiden in dieser Arbeit behandelten optimierten Implementierungen lässt allerdings Rückschlüsse darauf ziehen, wie der Performancegewinn unter Zuhilfenahme eines Coprozessors einzuordnen ist. 
@@ -44,7 +46,7 @@ Zur Planung einer Software, die einen Xeon Phi benutzen soll, gehört die Überl
 \subsection{Automatic Offload}
 Das für den Programmierer einfachste Nutzungsmodell ist Automatic Offload. Bei diesem Modell entscheidet das Programm zur Laufzeit, ob numerische Berechnungen auf dem Coprozessor oder dem Hostsystem ausgeführt werden sollen. Der Programmierer muss dazu keine Vorkehrungen im Quellcode treffen. Die dazu notwendige Entscheidungslogik ist bereits in einigen vorkompilierten Bibliotheken, wie der Math Kernel Library von Intel enthalten. Das bedeutet, dass sich der Programmierer bei der Nutzung von Funktionen dieser Bibliotheken keine Gedanken darüber machen muss, wann eine Auslagerung an den Coprozessor sinnvoll ist oder wie diese veranlasst wird. Ein Nachteil dieses Modells besteht allerdings darin, dass es sich nur auf dafür geeignete Bibliotheksfunktionen anwenden lässt. Zur Auslagerung von eigenem Anwendungscode lässt sich dieses Modell nicht anwenden. 
 \subsection{Compiler-Assisted Offload}
-Für den Fall, dass aufwändige Abschnitte des Anwendungscodes auf den Coprozessor ausgelagert werden sollen, kann dies dem Compiler explizit mitgeteilt werden. In C/C++ lässt sich dies mithilfe des Pragmas \lstinline|\#pragma offload| bewerkstelligen. (vgl. \cite{xeonphiQuickstart}) Das nachfolgende Codebeispiel soll verdeutlichen, wie dieses Pragma anzuwenden ist. 
+Für den Fall, dass aufwändige Abschnitte des Anwendungscodes auf den Coprozessor ausgelagert werden sollen, kann dies dem Compiler explizit mitgeteilt werden. In C/C++ lässt sich dies mithilfe des Pragmas |#pragma offload| bewerkstelligen. (vgl. \cite{xeonphiQuickstart}) Das nachfolgende Codebeispiel soll verdeutlichen, wie dieses Pragma anzuwenden ist. 
 \begin{lstlisting}[language=c, caption={Beispiel für eine Funktion, die ausgelagert werden soll (Quelle: \parencite{xeonphiQuickstart})} , captionpos=b, label=lst:compoffloadBefore, frame=single, linewidth=\textwidth, breaklines=true]
 float reduction(float *data, int size) 
 { 
@@ -60,7 +62,7 @@ float reduction(float *data, int size)
 float reduction(float *data, int size) 
 { 
 	float ret = 0.f; 
-	\#pragma offload target(mic) in(data:length(size))
+	#pragma offload target(mic) in(data:length(size))
 	for (int i=0; i<size; ++i) 
 	{
 		ret += data[i]; 
@@ -68,7 +70,7 @@ float reduction(float *data, int size)
 	return ret; 
 }
 \end{lstlisting}
-Wie in den obigen Beispielen zu sehen ist, genügt bereits das Hinzufügen einer Zeile zum Quellcode, um einen zusammenhängenden Codeabschnitt (in diesem Beispiel die \lstinline|for|-Schleife) an den Coprozessor auszulagern. Die Angabe \lstinline|target(mic)| legt dabei fest, dass an einen Coprozessor mit der MIC-Architectur ausgelagert werden soll. Die Angabe \lstinline|in(data:length(size))| teilt dem Compiler mit, dass das Array \lstinline|data| mit der Größe \lstinline|size| zum Coprozessor übertragen hin, aber nicht mehr zurück übertragen werden muss. Für die Variable \lstinline|ret| gibt es keine explizite Angabe, daher wird sie per Default vor der Berechnung zum Coprozessor hin und anschließend zum Hostsystem zurück übertragen. (vgl. \cite{xeonphiQuickstart})
+Wie in den obigen Beispielen zu sehen ist, genügt bereits das Hinzufügen einer Zeile zum Quellcode, um einen zusammenhängenden Codeabschnitt (in diesem Beispiel die |for|-Schleife) an den Coprozessor auszulagern. Die Angabe |target(mic)| legt dabei fest, dass an einen Coprozessor mit der MIC-Architectur ausgelagert werden soll. Die Angabe |in(data:length(size))| teilt dem Compiler mit, dass das Array |data| mit der Größe |size| zum Coprozessor übertragen hin, aber nicht mehr zurück übertragen werden muss. Für die Variable |ret| gibt es keine explizite Angabe, daher wird sie per Default vor der Berechnung zum Coprozessor hin und anschließend zum Hostsystem zurück übertragen. (vgl. \cite{xeonphiQuickstart})
 Auch wenn dieses Pragma im Quellcode angegeben ist, gibt es keine Garantie dafür, dass der betroffene Codeabschnitt tatsächlich vom Coprozessor bearbeitet wird. Laut dem C99-Standard ist es dem Compiler überlassen, wie Pragmas in einem C-Programm zu behandeln sind. Pragmas sind sogar explizit dafür vorgesehen, compilerspezifische Features zu steuern. Wenn das Programm mit einem Compiler übersetzt wird, der nicht für den Offload auf einen Xeon Phi vorgesehen ist, dann sollte er dieses Pragma ignorieren und bestenfalls mit einer Warnung auf das unbekannte Pragma hinweisen. (vgl. \cite{gccDokuPragmas}) Selbst wenn der Compiler Offload-Code für einen Xeon-Phi erzeugt, dann muss das noch nicht zwangsläufig heißen, dass der Offload tatsächlich durchgeführt wird. Wenn der Coprozessor zur Laufzeit nicht Verfügbar ist, dann wird der auszulagernde Codeabschnitt trotzdem auf dem Hostsystem ausgeführt. (vgl. \cite{xeonphiQuickstart})
 Compiler Assisted Offload ist dann hilfreich, wenn Teile des Anwendungscodes auf den Coprozessor ausgelagert werden sollen. Es liegt jedoch in der Verantwortung des Programmierers, geeignete Codeabschnitte auszuwählen und die zu übertragende Datenmenge gering zu halten. 
 \subsection{Native}
