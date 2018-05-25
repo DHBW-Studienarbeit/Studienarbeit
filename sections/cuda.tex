@@ -98,8 +98,11 @@ Die Implementierung und Parallelisierung des Convolutional Neural Networks in di
 \end{figure}
 Diese Aufbau ist in Abbildung \ref{pic:cuda_maxwell_smm_single} dargestellt. Jede SMM verfügt über vier Warp-Scheduler. Damit ist es möglich, vier Warps pro SMM konkurrierend zu betreiben. Jeder Warp-Scheduler kontrolliert dabei 32 CUDA-Cores. Die L1-Caches unterscheiden sich nicht von der, der Pascal-Architektur. Auch die Register-Files sind unverändert, wodurch jedem Warp-Scheduler bzw. den darin organisierten CUDA-Cores 16384 32-Bit Register zur Verfügung stehen. Eine weitere Neuerung ist die Verlegung der \emph{PolyMorph Engine 3.0} direkt in die SMM. In der Pascal -Architektur befand sich diese noch außerhalb der SM. \par 
 Es wurden nun alle relevanten Grundlagen der Programmierung auf CUDA sowie der Aufbau und die Struktur der verwendeten Hardware erläutert. Der nächste Abschnitt widmet sich der Implementierung des in dieser Arbeit vorgestellten Convolutional Neural Network unter Zuhilfenahme einer NVIDIA Geforce GTX Titan X Grafikkarte. Es werden der gewählte Ansatz zur Parallelisierung der Berechnungen, ein Ansatz zur Umsetzung der Faltung und die daraus resultierenden Änderungen in den weiteren Schichten des Netzes dargestellt. \par 
-\section{Umsetzung und Parallelisierung} \label{sec:cuda_umsetzung} 
 
+\section{Umsetzung und Parallelisierung} \label{sec:cuda_umsetzung} 
+Die Stärke der Grafikkarte liegt in der effizienten Berechnung von mathematischen Operationen auf Matrizen. Folgend dieser Prämisse wurde bei der Umsetzung ein Ansatz gesucht, welcher die Berechnung der einzelnen Schichten durch geschickte Matrixoperationen abbilden kann. Es wurden im Vorfeld der Implementierung verschiedene Ansätze betrachtet. Darunter der \emph{Winograd Small Convolution} -Algorithmus erweitert auf große Matrizen (vgl. \cite{WINOGRADSMALLCONV}) und eine auf der Fast-Fourier-Transformation basierende Methode (vgl. \cite{NVIDIA_WHITE_FFTCONV}). Die Wahl fiel dabei aufgrund von Recherchen von bereits bestehenden Vergleichen (vgl. \cite{UNROLLING_CONV}) auf die Methode der \emph{Unrolling based Convolution}. Damit ist es möglich, die Faltungsoperation eines Convolutional Neural Networks als einfache Matrixmultiplikation darzustellen. Diese Methode wird in \fref{sec:cuda_unrolling_conv} näher erläutert. \\ Die Unrolling-based Convolution hat nicht nur Einfluss auf die Convolutional Layer des Netzes, sonder auch auf die Pooling Layer und den Input Layer. Das in dieser Arbeit verwendete bereits in anderen Anwendungen erprobte Netz besteht aus einem Input Layer, zwei Convolutional Layern mit Faltungskernen der Größe $5\times 5$, zwei Pooling Layern mit $2\times 2$-Bereichen, welche die Größe des Layers jeweils halbieren, einer Fully Connected Schicht mit 1024 Nodes und einer finalen Fully Connected Schicht mit 10 Nodes. In der ersten Convolutional Schicht werden 32 Feature Maps erzeugt. In der zweiten werden 64 Feature Maps erzeugt. Eine Darstellung des verwendeten CNNs ist in \fref{fig:matrixkonfiguration} abgebildet. Darin sind bereits die bei der Unrolling-based Convolution -Methode entstehenden Matrizen schematisch dargestellt.\par 
+\begin{figure}[!htbp]
+	\centering
 \begin{tikzpicture}[scale=0.7]
 	\draw (0,1) rectangle (2,5); %input
 	\draw (3,1) rectangle (4,5); %conv1
@@ -113,18 +116,44 @@ Es wurden nun alle relevanten Grundlagen der Programmierung auf CUDA sowie der A
 	\draw (19, 2.5) rectangle (19.4, 2.7); %fullyconnected2
 	\draw (18, 6) rectangle (18.3, 8); %weight4
 	
-	\node at (0,7) (weights) {Gewichte};
+	\node at (0,7) (weights) {Gewichtsmatrizen};
 	\node at (0,0) (input) {Input};
 	\node at (3,0) (conv1) {Conv1};
 	\node at (6,0) (max1) {MaxPooling1};
 	\node at (9,0) (conv2) {Conv2};
 	\node at (12,0) (max2) {MaxPooling2};
+	\node at (16,0) (ful1) {Fully1};
 	\node at (19,0) (final) {Final Layer};
 \end{tikzpicture}
+\caption{Darstellung der genutzten Matrizen} \label{fig:matrixkonfiguration}
+\end{figure}
 
 \subsection{Unrolling-based Convolution} \label{sec:cuda_unrolling_conv}
+Unrolling-based Convolution für Convolutional Neural Networks wurde 2006 von Mitarbeitern der Firma Microsoft vorgestellt. Dabei handelt es sich um eine Methode um die Faltungsoperation in Convolutional Neural Networks in eine einfach zu realisierende Matrix-Matrix-Multiplikation zu überführen (vgl. \cite{UNROLLING_CONV}). Dieser Ansatz verfolgt grundlegend die Idee, die Faltungsoperation zu entfalten bzw. auszurollen. Im ersten Schritt muss der Input des betreffenden Layers umsortiert und einige Werte vervielfacht werden.  \fref{fig:cuda_unrolling_1} zeigt die Operation am Beispiel von drei $3\times 3$ -Input-Matrizen, sechs $2\times 2$ -Faltungskernen und zwei Output -Features. \par 
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/Riedle/Unrolling_1.png} \caption{Exemplarische Darstellung der Unrolling-based Convolution (vgl. \cite{UNROLLING_CONV})} \label{fig:cuda_unrolling_1}
+\end{figure}
+Das hier gezeigte Schaubild ist in zwei Bereiche unterteilt. Im oberen Teil ist die traditionelle Faltungsoperation abgebildet. Man sieht hier drei Input-Features der Größe $3\times 3$. Darüber sind sechs Gewichtsmatrizen der Faltungskerne mit den Ausmaßen $2\times 2$ gezeigt. Die Faltungsoperation führt dann zu zwei Output-Features der Größe $2\times2$. \\ Im unteren Teil der Graphik ist die zugehörige Unrolling-based Convolution abgebildet. Die drei Input-Features werden in eine Matrix umsortiert. Hierbei ist zu beachten, dass einige Werte der ursprünglichen Matrizen mehrfach auftreten. In dieser Abbildung ist die Zuordnung der den Faltungskernen entsprechenden Bereichen der ursprünglichen Matrizen in die neue ausgerollte Matrix anschaulich dargestellt. Auch die Faltungskerne selbst müssen in eine neue größere Matrix umsortiert werden. Dabei werden deren Gewichte pro Output-Feature in eine Spalte einer entstehenden Kernel-Matrix einsortiert. Auch dieser Schritt ist in \fref{fig:cuda_unrolling_1} überischtlich dargestellt. Wird nun die entstandene Input-Matrix mit der entstandenen Kernel-Matrix multipliziert, befinden sich in den Spalten der daraus entstehenden Output-Matrix die Werte der Output-Features. Die Output-Matrix kann nun in einem nächsten Schritt für eine weitere Convolutional Schicht erneut nach dem nun bekannten Schema umsortiert werden. Damit ist durch diesen Ansatz jede Schicht durch eine einfache Matrix-Matrix-Multiplikation darstellbar. Die Umsortierung der Eingangswerte in den jeweiligen Schichten ist dabei nach \cite{UNROLLING_CONV} signifikant weniger aufwändig, als die klassische Faltungsoperation. \par 
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/Riedle/Unrolling_2.png}
+	\caption{Darstellung des Vorgangs der Umsortierung bei Unrolling-based Convolution (vgl. \cite{UNROLLING_CONV})} \label{fig:cuda_unrolling_2}
+\end{figure}
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/Riedle/Unrolling_3.png}
+	\caption{Veranschaulichung der sich ergebenden Matrixgrößen bei Unrolling-based Convolution (vgl. \cite{UNROLLING_CONV})} \label{fig:cuda_unrolling_3}
+\end{figure}
+
+\subsection{Parallelisierung} \label{sec:cuda_parallelisierung}
 \subsection{Input-Layer} \label{sec:cuda_input}
+
+Das $28\times 28$ Pixel große Input-Muster wird in dem hier betrachteten Netz derart umsortiert, dass eine $567\times 25$ -Matrix entsteht. Die Matrixdimensionen ergeben sich aus der Definition des nachfolgenden Convolutional Layers. Dieser besteht auf $5\times 5$ -Faltungskernen, was mit einer Schrittweite von $1$ zu einem $24\times24$ -Pixel großen Output führt. Dies findet natürlich 32 mal für jede Feature Map statt. Die Anzahl der Zeilen im Input-Layer ergibt sich also durch die Größe einer Feature Map des folgenden Convolutional Layers. Tatsächlich finden sich in den Spalten der Ergebnismatrix im Convolutional Layer die Feature Maps wieder (vgl. \cite{UNROLLING_CONV}). \\ Die Anzahl der Spalten der Input-Matrix ist durch die Größe des Faltungskerns bestimmt.
+
 \subsection{Convolutional-Layer} \label{sec:cuda_conv}
 \subsection{MaxPooling-Layer} \label{sec:cuda_pooling}
+\subsection{Backpropagation} \label{sec:cuda_back}
 
 \end{document}
