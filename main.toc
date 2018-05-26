@@ -5,6 +5,8 @@
 \defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\nonumberline Tabellenverzeichnis}{10}{chapter*.3}
 \defcounter {refsection}{0}\relax 
+~\hfill J. Benz\par 
+\defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\numberline {1}Einleitung}{11}{chapter.1}
 \defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\numberline {2}Zusammenfassung}{13}{chapter.2}
@@ -14,6 +16,8 @@
 \contentsline {chapter}{\numberline {4}Klassische Neuronale Netzwerke}{17}{chapter.4}
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {4.1}Funktionsweise Perceptron}{18}{section.4.1}
+\defcounter {refsection}{0}\relax 
+~\hfill B. Riedle\par 
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {4.2}Aktivierungen}{20}{section.4.2}
 \defcounter {refsection}{0}\relax 
@@ -30,6 +34,8 @@
 \contentsline {chapter}{\numberline {5}Convolutional Neural Network}{28}{chapter.5}
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {5.1}Faltungsoperation}{29}{section.5.1}
+\defcounter {refsection}{0}\relax 
+~\hfill F. Schmidt\par 
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {5.2}Pooling}{32}{section.5.2}
 \defcounter {refsection}{0}\relax 
@@ -59,6 +65,8 @@
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {6.4}Beschreibung der Problematik einer seriellen Implementierung}{45}{section.6.4}
 \defcounter {refsection}{0}\relax 
+~\hfill J. Benz\par 
+\defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\numberline {7}Implementierung auf einer General Purpose x86 CPU}{47}{chapter.7}
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {7.1}OpenMP (Open Multi Procesing)}{48}{section.7.1}
@@ -78,6 +86,8 @@
 \contentsline {subsubsection}{\nonumberline Alternative Implementierung des Convolutional Layers}{56}{section*.17}
 \defcounter {refsection}{0}\relax 
 \contentsline {subsection}{\numberline {7.2.2}Verwendung von SIMD}{59}{subsection.7.2.2}
+\defcounter {refsection}{0}\relax 
+~\hfill F. Schmidt\par 
 \defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\numberline {8}Implementierung auf einem Intel Xeon Phi Coprozessor}{64}{chapter.8}
 \defcounter {refsection}{0}\relax 
@@ -171,6 +181,8 @@
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {8.10}Vergleich mit Tensorflow}{73}{section.8.10}
 \defcounter {refsection}{0}\relax 
+~\hfill B. Riedle\par 
+\defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\numberline {9}Implementierung auf einer Nvidia GPU mit CUDA}{74}{chapter.9}
 \defcounter {refsection}{0}\relax 
 \contentsline {section}{\numberline {9.1}Grafikkarten zur Berechnung}{75}{section.9.1}
@@ -202,6 +214,8 @@
 \contentsline {subsection}{\numberline {9.3.7}Backpropagation}{101}{subsection.9.3.7}
 \defcounter {refsection}{0}\relax 
 \contentsline {subsection}{\numberline {9.3.8}Zusammenfassung GPU-Implementierung}{101}{subsection.9.3.8}
+\defcounter {refsection}{0}\relax 
+~\hfill J.Benz, F. Schmidt\par 
 \defcounter {refsection}{0}\relax 
 \contentsline {chapter}{\numberline {10}Vergleich der unterschiedlichen Implementierungen}{103}{chapter.10}
 \defcounter {refsection}{0}\relax 
