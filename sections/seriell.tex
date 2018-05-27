@@ -2,8 +2,10 @@
 
 \begin{document}
 Im ersten Teil dieser Arbeit soll eine rein seriellen Implementierung eines Convolutional Neural Network erstellt werden. Als Vorlage dient ein ein von Google veröffentlichtes Python-Skript, das die Bibliothek TensorFlow verwendet. Ziel dieser ersten Implementierung ist nicht, eine produktiv anwendbare Software zu erstellen, sondern eine in C++ geschriebene Vorlage für die später zu erstellenden optimierten Implementierungen zu schaffen. 
+
 \section{Tensorflow}
 TensorFlow ist eine von Google entwickelte und veröffentlichte Bibliothek für hochperformante numerische Berechnungen. Anwendung findet TensorFlow unter anderem in den Bereichen Machine Learning und Deep Learning. Dazu gehört auch die Erkennung handgeschriebener Ziffern mithilfe eines Convolutional Neural Network. APIs zur Interaktion mit TensorFlow existieren in mehreren Programmiersprachen, am weitesten verbreitet ist allerdings Python. Die eigentlichen Berechnungen werden allerdings von einer vorkompilierten Bibliothek durchgeführt, um Overhead von interpretierten Sprachen oder mangelhafter Compileroptimierung zu vermeiden. (vgl. \cite{tensorflowTutorial2})
+
 \section{Netzaufbau}
 Der für die serielle Implementierung verwendete Netzaufbau wird von einem Python-Skript übernommen, das Google mit der offiziellen Dokumentation von Tensorflow veröffentlicht hat. (vgl. \cite{tensorflowTutorial})
 \begin{figure}
@@ -13,6 +15,7 @@ Der für die serielle Implementierung verwendete Netzaufbau wird von einem Pytho
     \label{pic:AufbauNetzwerkSerial} 
 \end{figure} 
 Die Abfolge der verwendeten Schichten, sowie einige ihrer Eigenschaften sind in Abbildung \ref{pic:AufbauNetzwerkSerial} schematisch dargestellt. Wie darin zu sehen ist, besteht das Netz aus 6 Schichten. Zwei Paare aus je einem Convolutional Layer und einem Max Pooling Layer werden von zwei Fullyconnected Layern gefolgt. Für die in der Vorlage verwendeten Filtergrößen und Featurezahlen ist bekannt, dass sie zu einer Testgenauigkeit von etwa 98\,\% führen sollten. (vgl. \cite{tensorflowTutorial}) Aufgrund einiger Abweichungen von der Vorlage kann die Erwartungshaltung an die Genauigkeit allerdings nicht ohne Vorbehalte auf den Netzaufbau in dieser Arbeit übertragen werden. Grund dafür sind einige Abweichungen des Aufbaus von der Vorlage. Als Aktivierungsfunktion wird in dieser Arbeit sigmoid verwendet. Außerdem wird beim Trainieren in der Vorlage eine Technik namens Dropout Regularization eingesetzt. Diese Technik steigert die erreichbare Testgenauigkeit, indem sie einen störenden Effekt namens Overfitting vermindert. (vgl. \cite{neuralNetworksAndDeepLearning})
+
 \section{Systembeschreibung}
 Das Programm der seriellen Implementierung muss folgende Aufgaben erfüllen: 
 \begin{description}
@@ -38,6 +41,7 @@ Die im Diagramm \ref{pic:cnn_serial_classes} dargestellten Klassen sind gemäß 
 \item{Network:} Dies ist die zentrale Klasse des seriellen Programms. Zur Laufzeit existiert genau ein Objekt dieser Klasse. Dieses verwaltet die PictureContainer mit den Trainings- und Testdaten, eine Liste von Layer-Objekten zur Definition des Netzwerkmodells und eine mehrere Listen von Matrix-Objekten zur Speicherung aller veränderlichen Gewichte, Aktivierungen und Fehlergrößen. In dieser Klasse sind auch die Methoden zur Forward- und Backpropagation, zur Gewichtsanpassung und zum Trainingsablauf definiert. 
 \item{main:} Die Main-Funktion erzeugt ein Objekt der Klasse Network und initialisiert die Liste der Layer, um das Netzwerkmodell festzulegen. Anschließend ruft es die Trainings- und Testmethoden des Netzwerks auf. 
 \end{description}
+
 \section{Beschreibung der Problematik einer seriellen Implementierung}
 Prinzipiell sollte das oben beschriebene Programm bei fehlerfreier Implementierung bereits in der Lage sein, anhand der Trainingsdaten das Klassifizieren von handgeschriebenen Ziffern automatisiert zu erlernen und dabei eine Genauigkeit im Bereich von 90\,\% bis 95\,\% zu erreichen. Dies lässt sich allerdings nicht in annehmbarer Zeit überprüfen. 
 
