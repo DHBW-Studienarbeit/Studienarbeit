@@ -9,3 +9,7 @@
 *.gz(busy)
 *.bbl
 *.blg
+*.lof
+*.lot
+*.toc
+main-blx.bib
