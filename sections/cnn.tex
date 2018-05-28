@@ -38,6 +38,8 @@ Mit einem Satz geteilter Gewichte und Biases ist das Netz nun in der Lage, ein S
 	\caption{Darstellung verschiedener Featuremaps (vgl. \cite{NNADL_PIC_CONV_FEATURES})} \label{fig:conv_features}
 \end{figure}
 Dieser Vorgang ist in Abbildung \ref{fig:conv_features} dargestellt. Das Netzwerk ist somit in der Lage verschiedene Strukturelemente an beliebigen Positionen zu erkennen. Erweitert man das Netz um weitere Schichten, kann es mit entsprechendem Training auch lernen, welche Kombinationen dieser Elemente zu einem Mustertyp gehören.\par Damit erweitert sich der eingangs genannte Vorteil von CNNs. Nicht nur die Verschiebung ganzer Muster innerhalb eines Bildes kann erkannt werden, sondern auch wiederkehrende Strukturelemente können für die Erkennung anderer Muster durch entsprechende Kombination in weiteren Schichten genutzt werden.
+
+\addtocontents{toc}{~\hfill F. Schmidt\par}
 \section{Pooling}
 Die Erzeugung von vielen Featuremaps aus einer einzelnen Eingabe gehört zu den grundlegenden Eigenschaften der im vorherigen Abschnitt beschriebenen Faltungsoperation. Dies führt allerdings zu einer erheblichen Vergrößerung der Datenmenge, die von nachfolgenden Layern bearbeitet werden muss. Um das Ausmaß dieser Vergrößerung einschätzen zu können, wird an dieser Stelle die Größe des Outputs einer Faltung in Abhängigkeit von der Eingabegröße und weiterer Eigenschaften der Faltungsschicht untersucht. 
 In den nachfolgenden Gleichungen steht \(S\) für die Größe einer einzelnen Ein- bzw. Ausgabe. Die Variablen \(x\), \(y\) und \(f\) stehen für die Dimensionen der Ein- bzw. Ausgabe. Die Größe des Filterkernels ist durch \(F_x\) und \(F_y\) bestimmt, für die Schrittweite wird der Wert \(1\) angenommen. 
@@ -51,20 +53,24 @@ y_{out} &= y_{in} - F_y + 1
 \end{equation}
 Unter der Bedingung, dass \(x_{in} >> F_x\) und \(y_{in} >> F_y\) ergibt sich die Näherung \(\frac{S_{out}}{S_{in}} = \frac{f_{out}}{f_{in}}\). Die Anzahl der Neuronen einer Faltungsschicht gegenüber der des vorherigen Layers steigt bei der Faltungsoperation demzufolge annähernd proportional zur Anzahl der Featuremaps. 
 Mit der Datenmenge im Ausgang der Faltungsschicht steigt auch die Zahl der Aktivierungen, die in den nachfolgenden Schichten bearbeitet werden müssen. Dies stellt einen beträchtlichen Mehraufwand dar und kann zu einer signifikanten Steigerung der Rechenzeit und des Speicherbedarfs führen. Um diesen Mehraufwand zu reduzieren, sind die Faltungsschichten in den meisten Implementierungen von CNNs von sogenannten Pooling-Schichten gefolgt. Beim Pooling wird jede Featuremap in rechteckige Abschnitte unterteilt, die dann jeweils auf einen neuen Aktivierungswert abgebildet werden. Für diese Abbildung gibt es mehrere Methoden, einige davon werden im folgenden Abschnitt näher erläutert. 
+
 \subsection{Average Pooling}
 Beim Average Pooling wird das arithmetische Mittel aller betrachteten Aktivierungen des Eingangs berechnet. Das Ergebnis wird direkt als Ausgang übernommen. Auf die Verwendung einer Aktivierungsfunktion wird verzichtet, da das Ergebnis durch die Verwendung des arithmetischen Mittels sowieso im für die Aktivierungsfunktion des letzten Layers üblichen Zahlenbereich liegt. Demnach gilt für die Vorwärtsberechnung eines Average Pooling Layers: 
 \begin{equation} \label{eq:averagepooling}
 output_{x, y} = \frac{\sum\limits_{(m, n)\in{M_x}\times{N_y}} input_{m, n}}{|M_x\times{N_y}|}
 \end{equation}
 Die Mengen \(M_x\) und \(N_y\) beinhalten dabei jeweils die x- und y-Koordinaten der Eingaben aus dem relevanten Bereich. Die Inhalte dieser Mengen hängen von x bzw. y ab, somit lässt sich jeder Position in der Ausgabe ein eigener Eingabebereich zuordnen. 
+
 \subsection{Max Pooling} \label{maxpool_forward}
 Beim Max Pooling werden die betrachteten Aktivierungen des Eingangs miteinander verglichen und der größte Wert wird unverändert im Ausgang übernommen. Auch hier wird auf die erneute Anwendung einer Aktivierungsfunktion verzichtet. Formal lässt sich Max Pooling wie folgt beschreiben: 
 \begin{equation} \label{eq:maxpooling}
 output_{x, y} = max( {input_{m,n} | m \in M_x; n \in N_y})
 \end{equation}
 Die obige Gleichung wirkt zwar auf menschliche Betrachter einfach, allerdings ist sie maschinell nicht ohne Schwierigkeiten zu lösen. Der Grund dafür ist, dass zur Berechnung der max-Operation Verzweigungen nötig sind. Bei den meisten modernen CPU-Archtikturen werden diese deutlich langsamer ausgeführt als rein sequentielle Operationen. 
+
 \section{Anpassungen der Backpropagation}
 Das Verhalten eines Pooling Layers weicht deutlich vom Verhalten anderer Layertypen ab. Diese Abweichung macht es erforderlich, die zur Backpropagation erforderliche Fehlerweitergabe für diesen Layertyp gesondert zu betrachten. Partielle Ableitungen der Kostenfunktion nach den Gewichten sind an dieser Stelle nicht erforderlich, da weder Average Pooling, noch Max Pooling auf Gewichte zurückgreifen. Zwar existieren auch gewichtsbehaftete Poolingverfahren, (vgl. \cite{paperMixedPooling}) allerdings sind diese nicht Gegenstand dieser Arbeit. Für die Backpropagation eines Pooling Layers ist es also nur erforderlich, die partielle Ableitung der Kostenfunktion nach allen Eingaben zu bestimmen. Da sich die hier behandelten Verfahren deutlich voneinander unterscheiden, werden sie im Folgenden getrennt betrachtet. 
+
 \subsection{Average Pooling}
 Die Gleichung \ref{eq:pooling_backprop_std} dient als Ausgangspunkt zur Bestimmung der gesuchten partiellen Ableitung. Wie allgemein bei der Backpropagation gilt auch hier: 
 \begin{equation} \label{eq:pooling_backprop_std}
@@ -87,6 +93,7 @@ Durch Einsetzen in Gleichung \ref{eq:pooling_backprop_simplified} ergibt sich da
 \frac{\partial C}{\partial x_i} = \frac{\partial C}{\partial y_j} \cdot \frac{1}{|M\times{N}|}
 \end{equation}
 Wird die Eingabe also in gleich große Cluster eingeteilt, so lässt sich der Fehler aller Aktivierungen im Eingang bestimmen, indem der Fehler der zugehörigen Ausgangsaktivierung duch die konstante Clustergröße dividiert wird. 
+
 \subsection{Max Pooling}
 Wie zuvor beim Average Pooling gilt auch hier die Gleichung \ref{eq:pooling_backprop_std}. Außerdem wird wieder angenommen, dass sich die Cluster nicht überschneiden, womit auch Gleichung \ref{eq:pooling_backprop_simplified} ohne Änderungen auf Max Pooling übertragen werden kann. Die Ableitung \(\frac{\partial y_j}{\partial x_i}\) muss allerdings neu bestimmt werden, da sich die beiden Verfahren bei der Vorwärtsberechnung unterscheiden. 
 Die Vorwärtsberechnung für Max Pooling ist bereits durch Gleichung \ref{eq:maxpooling} formalisiert. Zunächst wird diese Gleichung unter Verwendung der Variablen \(x_i\) und \(y_j\) neu formuliert. Damit ergibt sich: 
@@ -110,12 +117,17 @@ Dies lässt sich in die zuvor bestimmte Gleichung \ref{eq:pooling_backprop_simpl
    \end{cases}
 \end{equation}
 Wie zu erkennen ist, wird hier das Ergebnis der Vorwärtsoperation erneut verwendet. Die Position des Maximums kann daher zwischengespeichert werden, um den Aufwand für eine erneute Berechnung einzusparen. 
+
 \section{Vergleich}
 Sowohl Average Pooling, als auch Max Pooling erfüllen die Hauptanforderungen an eine Pooling-Schicht, nämlich eine Datenreduktion um einen durch die Clustergröße bestimmbaren Faktor. Unterschiede zwischen den beiden Verfahren zeigen sich in der Effizienz der Berechnung und der Qualität des Ergebnisses. 
+
 \subsection{Effizienz}
 Die Gleichung der Max-Pooling-Operation beinhaltet einen Operator zur Bestimmung des Maximums aus einer Eingabemenge. Wie bereits in Abschnitt \ref{maxpool_forward} erwähnt, ist die maschinelle Berechnung dieses Operators sehr ineffizient. Beim Average Pooling sind zwar mehr Rechenoperationen erforderlich, allerdings lassen sich diese mithilfe moderner CPUs und GPUs deutlich schneller berechnen. Dies ist möglich, weil viele Architekturen Möglichkeiten bereitstellen, gleichartige Operationen gleichzeitig mit einer größeren Menge von Operanden durchzuführen. 
+
 Darüber hinaus benötigt ein Max Pooling Layer zusätzlichen Speicher, um die Position des im Forward-Schritt ermittelten Maximums bis zur Backpropagation zwischenzuspeichern. Bei Prozessoren, die einen Cache besitzen, erhöht zusätzlicher Speicherbedarf die Wahrscheinlichkeit, dass im Cache abgelegte Daten überschrieben werden und erneut aus dem langsameren Arbeitsspeicher gelesen werden müssen. 
+
 Zusammenfassend lässt sich daher feststellen, dass die Berechnung von Average Pooling im Gegensatz zu Max Pooling auf den in dieser Arbeit verwendeten Architekturen performanter ausgeführt wird. Wie groß der tatsächliche Unterschied ist, hängt stark von den verwendeten Prozessoren und Implementierungen ab und lässt sich somit nicht allgemein feststellen. 
+
 \subsection{Qualität}
 Die Qualität des Ergebnisses einer Pooling-Operation hängt nicht nur von der Art der Operation selbst, sondern auch von der Art und Aufgabe des Modells, sowie den Eingabedaten ab. Tensorflow verwendet in seinen Beispielen zur Ziffernerkennung Max Pooling, weil sich damit für diesen Anwendungsfall erfahrungsgemäß eine höhere Genauigkeit erzielen lässt. (vgl. \cite{tensorflowTutorial})
 
@@ -127,4 +139,5 @@ Grund für das unterschiedliche Verhalten von Max Pooling und Average Pooling is
     \label{pic:pooling_avg_max} 
 \end{figure} 
 Aufgrund der bereits in vorhergenhenden Arbeiten festgestellten besseren Qualität der Ergebnisse bei der Klassifizierung von Ziffern aus der MNIST-Datenbank und zur besseren Vergleichbarkeit mit anderen Implementierungen wird in dieser Arbeit Max Pooling verwendet. 
+
 \end{document}

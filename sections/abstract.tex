@@ -1,7 +1,7 @@
 \documentclass[../main.tex]{subfiles}
 
 \begin{document}
-\begin{otherlanguage}{english}
+
 This thesis deals with the development of convolutional neuronal networks. Within the context of this thesis, four different implementations were developed, whereby the first implementation functions as a template of the three other implementations. There is no optimization of any sort inside this implementation and it runs fully serial on only one core of the CPU. Therefor this implementation is not usable for productive usage
 
 The other three implementations were optimized for a specific hardware. On one hand, there is a implementation for x86 processors. These are common in Office-PCs and Notebooks. In the other hand, there is a implementation for GPUs which supports the application programming interface CUDA. This one in optimized for graphic cards from Nvidia and calculates the values on the graphic processor instead of the CPU. Another implementation was designed for servers with a Intel Xeon Phi Co-processors. The Xeon Phi is a CPU-PCIe-Card with over 50 kernels inside.
@@ -9,5 +9,5 @@ The other three implementations were optimized for a specific hardware. On one h
 For training and verification purpose, the MNIST data set was used. This in an data set with 65000 images of handwritten numbers. 55000 of these are for training purpose and 10000 for verification purpose. With the training data set a network should be conducted, whitch recognizes different numbers, allthough it has never seen them befor.
 
 At the end of this thesis, there is a comparison between the different implementations of this piece of work and TensorFlow, a library designed to create neuronal networks which is used by Google, among others, for many services like Google Translator.
-\end{otherlanguage}
+
 \end{document}

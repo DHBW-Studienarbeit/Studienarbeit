@@ -5,13 +5,13 @@ titlepage, 						% Titlepage-Umgebung statt \maketitle
 %headsepline, 					% horizontale Linie unter Kolumnentitel
 abstracton,					% Überschrift beim Abstract einschalten, Abstract muss dazu in {abstract}-Umgebung stehen
 DIV11,						% auskommentieren, um den Seitenspiegel zu vergrößern
-%BCOR6mm,					% Bindekorrektur, die den Seitenspiegel um 6mm nach rechts verschiebt,
+BCOR6mm,					% Bindekorrektur, die den Seitenspiegel um 6mm nach rechts verschiebt,
 ]{scrreprt}		
 
 % Präambel
 \usepackage[a4paper]{geometry}
 \usepackage[utf8]{inputenc} 		% ermöglicht die direkte Eingabe von Umlauten
-\usepackage[ngerman, english]{babel} 		% deutsche Trennungsregeln und Übersetzung der festcodierten Überschriften
+\usepackage[ngerman]{babel} 		% deutsche Trennungsregeln und Übersetzung der festcodierten Überschriften
 \usepackage[T1]{fontenc} 			% Ausgabe aller Zeichen in einer T1-Codierung (wichtig für die Ausgabe von Umlauten!)
 
 \usepackage{graphicx}  			% Einbinden von Grafiken erlauben
@@ -23,11 +23,12 @@ DIV11,						% auskommentieren, um den Seitenspiegel zu vergrößern
 
 \usepackage{textcomp} 			% zum Einsatz von Eurozeichen u. a. Symbolen
 \usepackage{listings}				% Datstellung von Quellcode mit den Umgebungen {lstlisting}, \lstinline und \lstinputlisting
+\lstset{upquote=true}
 \usepackage{xcolor} 				% einfache Verwendung von Farben in nahezu allen Farbmodellen
 \usepackage[german]{nomencl} 		% zur Erstellung des Abkürzungsberzeichnisses
 
 \usepackage{nameref} % \nameref macro to reference section names 
-\usepackage{fancyref}  % \fref macro to reference macros 
+\usepackage[german]{fancyref}  % \fref macro to reference macros 
 \usepackage[colorlinks=true, hidelinks, linkcolor=blue, urlcolor=blue]{hyperref} %hyperlinks to pages, chapters and sections in pdf
 
 %\usepackage{lastPage} %last page macro
@@ -48,7 +49,7 @@ DIV11,						% auskommentieren, um den Seitenspiegel zu vergrößern
 
 \usepackage{subcaption}
 \usepackage{import}
-\usepackage[backend=biber, style=ieee]{biblatex}
+\usepackage[backend=bibtex, style=ieee]{biblatex}
 %\usepackage[style=apa,backend=biber]{biblatex}
 \addbibresource{bibliography.bib}
 
@@ -110,18 +111,12 @@ DIV11,						% auskommentieren, um den Seitenspiegel zu vergrößern
 							%here subfiles are in a one level lower directory than the main document
 
 \makenomenclature
+
+
 \begin{document}
 \subfile{titlepage}
 \clearpage
 
-\begingroup
-~
-\vfill
-\noindent Der Inhalt dieser Arbeit darf weder als Ganzes noch in Auszügen Personen außerhalb des Prüfungsprozesses und des Evaluationsverfahrens zugänglich gemacht werden, sofern keine anders lautende Genehmigung des Dualen Partners vorliegt.
-\vfill
-~
-\endgroup
-~\clearpage
 ~\vfill
 \begin{tabular}{|p{\linewidth}|}
 \hline
@@ -135,6 +130,20 @@ Ort \hspace{1cm} Datum \hspace{4cm} Unterschrift\\
 \vfill ~
 \clearpage
 \rmfamily
+
+
+
+\tableofcontents
+
+\listoffigures
+\listoftables
+
+\nomenclature{CNN}{Convolutional Neural Network}
+\nomenclature{MLP}{Multy Layer Perceptron}
+\printnomenclature
+
+\addtocontents{toc}{~\hfill J. Benz\par}
+
 \chapter{Einleitung}
 \subfile{sections/einleitung}	%import your subfiles
 \clearpage
@@ -159,18 +168,22 @@ Ort \hspace{1cm} Datum \hspace{4cm} Unterschrift\\
 \subfile{sections/seriell}
 \clearpage
 
+\addtocontents{toc}{~\hfill J. Benz\par}
 \chapter{Implementierung auf einer General Purpose x86 CPU}
 \subfile{sections/gpcpu}
 \clearpage
 
+\addtocontents{toc}{~\hfill F. Schmidt\par}
 \chapter{Implementierung auf einem Intel Xeon Phi Coprozessor}
 \subfile{sections/xeonphi}
 \clearpage
 
+\addtocontents{toc}{~\hfill B. Riedle\par}
 \chapter{Implementierung auf einer Nvidia GPU mit CUDA} \label{chap:cuda}
 \subfile{sections/cuda}
 \clearpage
 
+\addtocontents{toc}{~\hfill J.Benz, F. Schmidt\par}
 \chapter{Vergleich der unterschiedlichen Implementierungen}
 \subfile{sections/vergleich}
 \clearpage

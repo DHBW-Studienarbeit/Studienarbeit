@@ -1,45 +1,185 @@
 \documentclass[../main.tex]{subfiles}
 
+\lstMakeShortInline[columns=fixed, basicstyle=\bfseries]|
+
 \begin{document}
 Im Gegensatz zu General Purpose CPUs lassen sich mithilfe von Coprozessoren deutlich höhere Parallelisierungsgrade erzielen. Gegenüber GPUs haben sie den Vorteil, dass die Kerne eines Coprozessors einen größeren Befehlssatz verfügen, mit dem sie nicht nur Befehlssequenzen, sondern auch bedingte Sprünge ausführen können. Mit GPUs lässt sich dagegen eine weitaus höhere Parallelität erreichen. Mit der Max Pooling-Operation ist die Fähigkeit von Coprozessoren, auch Code mit Verzweigungen parallel auszuführen, von Nutzen. 
+
 In dieser Arbeit soll auch eine Implementierung des CNNs erstellt werden, die Berechnungen an Coprozessoren. Ein direkter Vergleich dieser Implementierung mit Tensorflow hat nur bedingte Aussagekraft, da Tensorflow laut der offiziellen Dokumentation nur für den Einsatz auf CPUs, GPUs und TPUs optimiert ist. Coprozessoren werden von Tensorflow dagegen nicht explizit unterstützt. (vgl. \cite{aboutTensorflow}) Ein Vergleich zwischen dieser Implementierung und den anderen beiden in dieser Arbeit behandelten optimierten Implementierungen lässt allerdings Rückschlüsse darauf ziehen, wie der Performancegewinn unter Zuhilfenahme eines Coprozessors einzuordnen ist. 
 
 Die DHBW Stuttgart besitzt einen Server, der mit einer General Purpose CPU(Intel Xeon E5-2650L) und zwei Coprozessoren(Intel Xeon Phi) ausgestattet ist. Beim Xeon Phi handelt es sich um eine PCIe-Erweiterungskarte, auf der eine spezielle CPU mit 60 Kernen und einer Taktrate von 1\,GHz, sowie ein DDR5-Arbeitsspeicher mit einer Größe von 8\,GB verbaut sind. Für diese Arbeit wurde den Studenten freundlicherweise ein SSH-Zugang zur Verfügung gestellt. Die in diesem Kapitel betrachtete Implementierung soll auf dem genannten Server getestet und dementsprechend auch für dessen Prozessoren optimiert werden. 
 
-\section{Xeon Phi Coprozessor}
+\section{Intel Xeon Phi Coprozessor}
+Beim Intel Xeon Phi handelt es sich um einen Coprozessor, der in Form einer PCIe-Erweiterungskarte (siehe Abbildung \ref{pic:xeonphicard}) mit dem Hostsystem verbunden werden kann und numerische Operationen durch Parallelisierung über bis zu 72 Rechenkerne, sowie durch Vektorisierung unterstützt. Zusätzlich zum Prozessor selbst ist auf der Erweiterungskarte ein DDR5-Arbeitsspeicher verbaut. Bei Bedarf kann der Xeon Phi ein eigenes Betriebssystem ausführen und damit Programme komplett unabhängig vom Hostsystem abarbeiten. (vgl. \cite{intelxeonphiprocessors})
+\begin{figure}
+    \centering 
+       \includegraphics[width=0.5\textwidth]{../images/Schmidt/xeon_phi_cards.png} 
+    \caption {Eine Erweiterungskarte mit einem Intel Xeon Phi (Quelle: \parencite{intelMICarchitecture})} 
+    \label{pic:xeonphicard} 
+\end{figure} 
 
 \subsection{Geschichte}
+%TODO
 
 \subsection{MIC-Archtektur}
+Der Xeon Phi basiert auf der von Intel entwickelten MIC-Architektur. MIC steht dabei für "Many Integrated Cores". 
+Wie in Abbildung \ref{pic:knightscorner} am Beispiel der Mikroarchitektur Knigths Corner zu sehen ist, kommunizieren die Kerne, der Arbeitsspeicher und die PCIe-Schnittstelle untereinander über einen Ringförmigen Datenbus mit einer Busbreite von 64 Bytes. (vgl. \cite{xeonphiJumpstart})
+\begin{figure}
+    \centering 
+       \includegraphics[width=0.5\textwidth]{../images/Schmidt/intel_mic_diagram.jpg} 
+    \caption {Mikroarchitektur Knights Corner (Quelle: \parencite{xeonphiJumpstart})}
+    \label{pic:knightscorner} 
+\end{figure}
+Zur Verminderung der Verlustleistung und der damit verbundenen Abwärme takten die einzelnen Rechenkerne langsamer als vergleichbare General Purpose CPUs. Der hohe Durchsatz des Coprozessors kann erreicht werden, weil Operationen auf viele Kerne verteilt und Operanden mithilfe der breiten Speicheranbindung zeitnah abgerufen werden können. (vgl. \cite{xeonphiJumpstart})
 
 \subsection{Anbindung an das Hostsystem}
-
-
+Mit dem Hostsystem ist der Xeon Phi über PCIe x16 verbunden. Dieser Bus lässt eine Bandbreite von 8\,GB/s zu. Verglichen mit der Bandbreite der Speicheranbindung des Hostsystems, sowie des Datenbusses innerhalb des Xeon Phi ist diese Bandbreite sehr gering. Abbildung \ref{pic:xeonphiBandwidths} vermittelt einen Eindruck über die Busbreiten innerhalb eines Systems mit zwei Prozessoren, DDR3-Arbeitsspeichern, und einem Rechenbeschleuniger bestehend aus einem Intel Xeon Phi und DDR5-Speicher. (vgl. \cite{interDeviceCommunication})
+\begin{figure}
+    \centering 
+       \includegraphics[width=0.5\textwidth]{../images/Schmidt/xeonphi_bandwidths.jpg} 
+    \caption {Busbandbreiten eines Systems mit DDR3-Arbeitsspeicher und Intel Xeon Phi (Quelle: \parencite{interDeviceCommunication})}
+    \label{pic:xeonphiBandwidths} 
+\end{figure}
+In Anwendungen, bei denen Daten zwischen dem Hostsystem und dem Xeon Phi geteilt werden müssen, ist die Übertragung dieser Daten eine kritischer Engpass. Der Aufwand zur Kommunikation zwischen den beiden Systemen hat großen Einfluss auf die Performance des Gesamtsystems. Der Programmierer hat dafür Sorge zu tragen, dass der Datenaustausch zwischen dem Host und dem Rechenbeschleuniger möglichst effizient verläuft. Die Beachtung folgender Faustregeln trägt zu einer hohen Effizienz des Offloads bei: 
+\begin{itemize}
+\item Daten zum Coprozessor transferieren und dort behalten (vgl. \cite{xeonphiJumpstart})
+\item Möglichst große Rechenoperationen auslagern (vgl. \cite{xeonphiJumpstart})
+\item Auf dem Coprozessor bereits existierende Daten wiederverwerten (vgl. \cite{xeonphiJumpstart})
+\end{itemize}
 
 \section{Nutzungsmodelle}
+Zur Planung einer Software, die einen Xeon Phi benutzen soll, gehört die Überlegung, welche Operationen sich zur Ausführung auf dem Coprozessor eignen und welche Rechenschritte auf dem Hostsystem ausgeführt werden sollten. Abhängig von dieser Verteilung sollte bestimmt werden, auf welche Weise der Coprozessor verwendet werden soll. Es kann zwischen mehreren Nutzungsmodellen gewählt werden, die bekanntesten davon werden nachfolgend vorgestellt. 
 
 \subsection{Automatic Offload}
+Das für den Programmierer einfachste Nutzungsmodell ist Automatic Offload. Bei diesem Modell entscheidet das Programm zur Laufzeit, ob numerische Berechnungen auf dem Coprozessor oder dem Hostsystem ausgeführt werden sollen. Der Programmierer muss dazu keine Vorkehrungen im Quellcode treffen. Die dazu notwendige Entscheidungslogik ist bereits in einigen vorkompilierten Bibliotheken, wie der Math Kernel Library von Intel enthalten. Das bedeutet, dass sich der Programmierer bei der Nutzung von Funktionen dieser Bibliotheken keine Gedanken darüber machen muss, wann eine Auslagerung an den Coprozessor sinnvoll ist oder wie diese veranlasst wird. Ein Nachteil dieses Modells besteht allerdings darin, dass es sich nur auf dafür geeignete Bibliotheksfunktionen anwenden lässt. Zur Auslagerung von eigenem Anwendungscode lässt sich dieses Modell nicht anwenden. 
 
-\subsection{Compiler-Assisted Offload}
+\subsection{Compiler-Assisted Offload} \label{phiCompAssistOffload}
+Für den Fall, dass aufwändige Abschnitte des Anwendungscodes auf den Coprozessor ausgelagert werden sollen, kann dies dem Compiler explizit mitgeteilt werden. In C/C++ lässt sich dies mithilfe des Pragmas |#pragma offload| bewerkstelligen. (vgl. \cite{xeonphiQuickstart}) Das nachfolgende Codebeispiel soll verdeutlichen, wie dieses Pragma anzuwenden ist. 
+\begin{lstlisting}[language=c, caption={Beispiel für eine Funktion, die ausgelagert werden soll (Quelle: \parencite{xeonphiQuickstart})} , captionpos=b, label=lst:compoffloadBefore, frame=single, linewidth=\textwidth, breaklines=true]
+float reduction(float *data, int size) 
+{ 
+	float ret = 0.f; 
+	for (int i=0; i<size; ++i) 
+	{
+		ret += data[i]; 
+	} 
+	return ret; 
+}
+\end{lstlisting}
+\begin{lstlisting}[language=c, caption={Beispielfunktion mit pragma zur Auslagerung(Quelle: \parencite{xeonphiQuickstart})}, captionpos=b, label=lst:compoffloadAfter, frame=single, linewidth=\textwidth, breaklines=true]
+float reduction(float *data, int size) 
+{ 
+	float ret = 0.f; 
+	#pragma offload target(mic) in(data:length(size))
+	for (int i=0; i<size; ++i) 
+	{
+		ret += data[i]; 
+	} 
+	return ret; 
+}
+\end{lstlisting}
+Wie in den obigen Beispielen zu sehen ist, genügt bereits das Hinzufügen einer Zeile zum Quellcode, um einen zusammenhängenden Codeabschnitt (in diesem Beispiel die |for|-Schleife) an den Coprozessor auszulagern. Die Angabe |target(mic)| legt dabei fest, dass an einen Coprozessor mit der MIC-Architectur ausgelagert werden soll. Die Angabe |in(data:length(size))| teilt dem Compiler mit, dass das Array |data| mit der Größe |size| zum Coprozessor übertragen hin, aber nicht mehr zurück übertragen werden muss. Für die Variable |ret| gibt es keine explizite Angabe, daher wird sie per Default vor der Berechnung zum Coprozessor hin und anschließend zum Hostsystem zurück übertragen. (vgl. \cite{xeonphiQuickstart})
+
+Auch wenn dieses Pragma im Quellcode angegeben ist, gibt es keine Garantie dafür, dass der betroffene Codeabschnitt tatsächlich vom Coprozessor bearbeitet wird. Laut dem C99-Standard ist es dem Compiler überlassen, wie Pragmas in einem C-Programm zu behandeln sind. Pragmas sind sogar explizit dafür vorgesehen, compilerspezifische Features zu steuern. Wenn das Programm mit einem Compiler übersetzt wird, der nicht für den Offload auf einen Xeon Phi vorgesehen ist, dann sollte er dieses Pragma ignorieren und bestenfalls mit einer Warnung auf das unbekannte Pragma hinweisen. (vgl. \cite{gccDokuPragmas}) Selbst wenn der Compiler Offload-Code für einen Xeon-Phi erzeugt, dann muss das noch nicht zwangsläufig heißen, dass der Offload tatsächlich durchgeführt wird. Wenn der Coprozessor zur Laufzeit nicht Verfügbar ist, dann wird der auszulagernde Codeabschnitt trotzdem auf dem Hostsystem ausgeführt. (vgl. \cite{xeonphiQuickstart})
+
+Compiler Assisted Offload ist dann hilfreich, wenn Teile des Anwendungscodes auf den Coprozessor ausgelagert werden sollen. Es liegt jedoch in der Verantwortung des Programmierers, geeignete Codeabschnitte auszuwählen und die zu übertragende Datenmenge gering zu halten. 
 
 \subsection{Native}
+Eine dritte Möglichkeit besteht darin, Anwendungen nativ auf dem Coprozessor laufen zu lassen. Dazu muss die Anwendung mit unter Angabe einiger zusätzlicher Compileroptionen gebaut werden. Die dabei erstellte Binary ist dann auf dem Hostsystem selbst nicht lauffähig. Sie lässt sich allerdings auf den Xeon Phi übertragen. Dieser verfügt über ein auf dem Linux-Kernel basierendes Betriebssystem, auf dem die erzeugte Binary ausgeführt werden kann. Bei einer nativen Programmausführung muss nur einmalig die Binary zum Xeon Phi übertragen werden. Zur Laufzeit ist dann keine Kommunikation mit dem Hostsystem notwendig. Auf diese Weise kann der Flaschenhals zwischen den beiden Systemen umgangen werden. (vgl. \cite{xeonphiQuickstart})
 
-
+Es ist allerdings nicht für jede Software von Vorteil, nativ auf dem Coprozessor zu laufen. Die Performance bei der Ausführung serieller Programmabschnitte nimmt bei diesem Nutzungsmodell deutlich ab, da der Xeon Phi für diese Aufgaben nicht optimiert ist. Die Performance bei der Ausführung von parallel berechenbaren Operationen nimmt nicht signifikant zu oder ab, denn sobald notwendigen alle Instruktionen und Operanden zur Verfügung stehen, wird die eigentliche Berechnung auf die gleiche Art ausgeführt. Was tatsächlich eingespart wird, sind die Datentransfers zwischen dem Hostsystem und dem Coprozessor. Aufgrund dieser Informationen kann eingeschätzt werden, ob sich eine native Programmausführung gegenüber einer Offload-Variante lohnt: Bei seltenen Wechseln zwischen längeren seriellen und parallelen Abschnitten sollte das Programm auf dem Hostsystem ausgeführt werden und bei Bedarf Rechenoperationen an den Xeon Phi auslagern. Wenn es erforderlich ist, das Programm in viele kurze serielle und parallele Abschnitte zu unterteilen, dann nimmt die Wahrscheinlichkeit zu, dass sich die native Ausführung der gesamten Anwendung auf dem Xeon Phi lohnt. (vgl. \cite{xeonphiQuickstart})
 
 \section{Compiler}
+Zum Übersetzen des in diesem Abschnitt zu erstellenden Programms kommt der Intel C++ Compiler zum Einsatz. Dieser wurde von Intel speziell zur Übersetzung und Optimierung von Code für Intels Prozessoren entwickelt, ist aber nicht auf diese Anwendungen beschränkt. Die erstellten Binaries sind auf allen Prozessoren ausführbar, die die Architekturen Intel64 oder IA-32 unterstützen. Darüber unterstützt der Compiler die Auslagerung von parallelisierbaren Rechenoperationen auf Intels Rechenbeschleuniger. Zu diesen gehören GPUs, die gemeinsam mit den eigentlichen CPUs in einigen Intel-Prozessoren enthalten sind, sowie Coprozessoren auf Basis der Intel MIC-Architektur, also auch der Xeon Phi. (vgl. \cite{iccDocumentation})
 
+Zur Erzeugung eines Programms, das auf mehrere Prozessoren verschiedener Architekturen verteilt werden soll, muss der Compiler heterogene Programme erzeugen. Bei der Nutzung eines Xeon-Phi und eines Nutzungsmodells, das Offload verwendet, bedeutet dies, dass auslagerbare Codeabschnitte mehrfach übersetzt werden. Erst zur Laufzeit wird entschieden, welcher Prozessor die Operation tatsächlich ausführt, daher kann auch erst dann entschieden werden, welche Variante für den ausführenden Prozessor geeignet ist. (vgl. \cite{iccDocumentation})
+
+Der Intel C++ Compiler übersetzt C/C++ standardmäßig nach den Standards C++98(ISO/IEC 14882:1998) und C90(ISO/IEC 9899:1990), unterstützt aber auch die meisten Features von C++11 und C99. Der zur Intels Compiler-Toolchain gehörende Linker kann darüber hinaus externe Objekte einbinden, die von anderen Compilern wie dem Intel Fortran Compiler oder auch demm GCC erzeugt wurden. (vgl. \cite{iccDocumentation})
 
 \section{Multithreading}
+Der Intel C++ Compiler unterstützt mehrere Threading-Bibliotheken, die sich auch innerhalb eines Programms kombinieren lassen. In diesem Abschnitt werden die bekanntesten Vertreter  vorgestellt und untereinander verglichen. 
 
 \subsection{PThread}
+Eine grundlegende Lösung für die Parallelisierung von Prozessen wird mit der C-Bibliothek |pthread| bereitgestellt. Diese Bibliothek definiert einen Datentyp namens |pthread_t|, der alle notwendigen Informationen zur Identifizierung und Verwaltung von je einem Thread beinhaltet. Der Aufbau dieses Datentyps ist abhängig vom zugrundeliegenden Betriebssystem, daher sollte der Anwendercode nur mithilfe der von pthread definierten Funktionen darauf zugreifen. Zum Erzeugen und Starten eines Threads genügt es, die Funktion |pthread_create| mit einem Zeiger auf eine Instanz von |pthread_t|, einem Funktionspointer, einem Pointer für Funktionsargumente, sowie einem weiteren Pointer für optionale Attribute aufzurufen. Zur Identifikation dieses Threads können Zeiger auf die gleiche Instanz von |pthread_t| auch an andere Funktionen übergeben werden. Dies ist zum Beispiel dann notwendig, wenn mehrere Threads untereinander Daten austauschen oder synchronisiert werden müssen. (vgl. \cite{pthreadDoku})
+
+PThread ist auf sehr vielen Plattformen verfügbar. Da es sich dabei nur um eine Bibliothek handelt, sind keine speziellen Funktionalitäten des Compilers notwendig, um nebenläufige Programme auf Basis von pthread zu übersetzen. (vgl. \cite{pthreadDoku})
+
+Problematisch ist allerdings, dass die Verwaltung der Threads vom Anwendercode übernommen wird. Skalierbare Anwendungen, die für verschiedene Prozessoren den Aufwand einer Operation automatisch auf die optimale Zahl von Threads aufteilen, sind damit nur schwer zu realisieren. (vgl. \cite{pthreadDoku})
 
 \subsection{OpenMP}
+Für eine bessere Skalierbarkeit bei stark nebenläufigen Prozessen sorgt die Verwendung der Multithreadingbibliothek OpenMP. Voraussetzung für die sinnvolle Anwendbarkeit von OpenMP ist allerdings, dass das Programm oder zumindest Teile davon dem Fork-Join-Parllelismus entsprechen. Wie in Abbildung \ref{pic:phiForkJoin} zu sehen, beschreibt dieses Modell einen seriellen Programmfluss, bei dem einzelne Codeabschnitte nebenläufig ausgeführt werden. Der Übergang von seriellen auf einen parallelen Ab schnitt wird dabei als Fork bezeichnet, der Übergang von einem parallelen auf einen seriellen Abschnitt wird Join genannt. (vgl. \cite{phiOpenmpDoku})
+\begin{figure}
+	\centering 
+	\includegraphics[width=0.5\textwidth]{../images/Schmidt/fork_join.jpg} 
+	\caption {Das Fork-Join-Modell zur Parallelisierung einzelner Abschnitte}
+	\label{pic:phiForkJoin} 
+\end{figure} 
+Der Anwendungscode muss für die Parallelisierung mittels OpenMP gegenüber einer seriellen Implementierung nur geringfügig verändert werden. Das Threadingverhalten wird dabei größtenteils durch Compileranweisungen gesteuert. Wie im Codebeispiel \ref{lst:phiOpenMP} zu sehen ist, genügt es ähnlich wie beim Compiler Assisted Offload (siehe Abschnitt \ref{phiCompAssistOffload}) einzelnen Codeabschnitten ein |#pragma| mit der entsprechenden Anweisung voranzustellen. (vgl. \cite{phiOpenmpDoku})
+\begin{lstlisting}[language=c, caption={Beispielfunktion mit pragma zur Nebenläufigen Ausführung einer for-Schleife(Quelle: \parencite{phiOpenmpDoku})}, captionpos=b, label=lst:phiOpenMP, frame=single, linewidth=\textwidth, breaklines=true]
+double  res[MAX];  int i;
+#pragma omp parallel for
+for (i=0;i< MAX; i++) {
+	res[i] = huge();
+}
+\end{lstlisting}
+Die in Listing \ref{lst:phiOpenMP} gezeigte Anweisung |#pragma omp parallel for| veranlasst den Compiler, einen Code zu erzeugen, der die Schleifendurchläufe nebenläufig ausführt. Die Anzahl der dabei verwendeten Threads lässt sich Umgebungsvariablen und Optionen beim Compileraufruf oder durch den Aufruf von dafür vorgesehenen Bibliotheksfunktionen im Quellcode beeinflussen. (vgl. \cite{phiOpenmpDoku}) Darüber hinaus stellt OpenMP noch eine große Zahl von weiteren Compileranweisungen und Bibliotheksfunktionen bereit. Dies ermöglicht es dem Programmierer zum Beispiel, kritische Abschnitte zu definieren, die nur von maximal einem Thread zur gleichen Zeit bearbeitet werden dürfen. Ein weiteres Beispiel sind Compileranweisungen, mit denen sich bestimmen lässt, ob bestimmte Variablen zwischen den Threads geteilt werden oder ob jeder Thread eine eigene Kopie dieser Variablen erhalten soll. (vgl. \cite{phiOpenmpDoku}) Da die erweiterten Funktionalitäten von OpenMP in diesem Teil der Arbeit nicht erforderlich sind, wird an dieser Stelle auch nicht speziell darauf eingegangen. In einem anderen Teil der Arbeit wird OpenMP näher betrachtet. 
 
-\subsection{OpenMPI}
+Gegenüber pthread hat die Verwendung von OpenMP geringere Auswirkungen auf die Lesbarkeit und Wartbarkeit eines Programms. Es gibt allerdings Fälle, in denen das Fork-Join-Modell und damit auch OpenMP nicht sinnvoll angewendet werden können. Außerdem werden die zu OpenMP gehörenden |#pragma|-Anweisungen nicht von jedem Compiler unterstützt. Compiler, die diese Anweisungen nicht interpretieren können, sollten diese ignorieren. Dies hat zur Folge, dass der Compiler ein serielles Programm erzeugt, das zwar die gleichen Ergebnisse liefert, dabei aber nicht von Multithreading profitieren kann. (vgl. \cite{phiOpenmpDoku})
 
-\subsection{Intel Threading Blocks}
+\subsection{Intel Threading Building Blocks}
+Intel TBB (Threading Building Blocks) ist eine Threadingbibliothek, die Intel für die Programmiersprache C++ entwickelt hat. TBB verfolgt im Gegensatz zu anderen Modellen keinen threadbasierten, sondern einen taskbasierten Ansatz. Dies bedeutet, dass der Programmierer parallelisierbare Operationen nicht mehr in Threads, sondern in einzelne Aufgaben zerlegt, die dann von einem Taskscheduler auf mehrere Threads verteilt werden. Jedes Programm, das mithilfe von TBB zusätzliche Threads erzeugen und verwalten soll, muss zunächst einen Taskscheduler erstellen. Dazu genügt es, ein Objekt des Typs |task_scheduler_init| zu instanziieren. Listing \ref{lst:phiTBBminimalExample} zeigt ein minimales Beispiel, das einen Taskscheduler erstellt und dann endet. (vgl. \cite{intelTBBtutorial})
+\begin{lstlisting}[language=c++, caption={Minimalbeispiel zur Verwendung von Intel TBB(Quelle: \parencite{xeonphiBestPractices})}, captionpos=b, label=lst:phiTBBminimalExample, frame=single, linewidth=\textwidth, breaklines=true]
+//comment
+#include "tbb/task_scheduler_init.h"
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
+using namespace tbb;
+int main() {
+	task_scheduler_init init;
+	return 0;
+}
+\end{lstlisting}
+Außerdem ist es möglich, die Aufgaben zu Gruppen zusammenzufassen und Eigenschaften oder Beziehungen für diese festzulegen. Auf diese Weise lassen sich auch komplexe Operationen mit kritischen und atomaren Abschnitten und Barrieren definieren. Der Scheduler verteilt die zu bearbeitenden Aufgaben dann ohne weiteres Zutun des Programmierers unter Beachtung der festgelegten Anforderungen auf möglichst viele Threads. (vgl. \cite{intelTBBtutorial}) Listing \ref{lst:phiTBBfibExample} zeigt beispielhaft, wie die Erstellung und Ausführung neuer Tasks aussehen kann. Es zeigt eine Funktion zur rekursiven Berechnung eines Elements der Fibonacci-Folge. In jedem Rekursionsschritt (falls die Abbruchbedingung nicht erfüllt ist) werden zwei neue Threads gestartet, die die beiden vorherigen Elemente auf die gleiche Art rekursiv berechnen. Wenn beide Threads beendet sind, endet auch die Funktion selbst. 
+\begin{lstlisting}[language=c++, caption={Rekursive Funktion mit TBB zur Threadverwaltung(Quelle: \parencite{intelTBBtutorial})}, captionpos=b, label=lst:phiTBBfibExample, frame=single, linewidth=\textwidth, breaklines=true]
+{
+#include "tbb/task_group.h"
 
+using namespace tbb;
 
+int Fib(int n) {
+	if( n<2 ) {
+		return n;
+	} else {
+		int x, y;
+		task_group g;
+		g.run([&]{x=Fib(n-1);}); // spawn a task
+		g.run([&]{y=Fib(n-2);}); // spawn another task
+		g.wait();                // wait for both tasks to complete
+		return x+y;
+	}
+}
+}
+\end{lstlisting}
+Wie bei OpenMP ist es auch mit TBB möglich, mit nur geringfügigen Codeänderungen Schleifen nebenläufig auszuführen. Bei TBB geschieht dies allerdings nicht mithilfe von Compileranweisungen, sondern mittels eines in der Bibliothek definierten Templates, das anstelle der |for|-Schleife verwendet wird. Als Beispiel für diese Ersetzung dienen die Listings \ref{lst:phiTBBserialFor} und \ref{lst:phiTBBparallelFor}. Das im zweiten Listing gezeigte Template erwartet als Parameter die Grenzen der Laufvariable und einen Lambdaausdruck mit den in der Schleife auszuführenden Operationen. (vgl. \cite{intelTBBtutorial})
+\begin{lstlisting}[language=c++, caption={Funktion mit serieller for-Schleife(Quelle: \parencite{intelTBBtutorial})}, captionpos=b, label=lst:phiTBBserialFor, frame=single, linewidth=\textwidth, breaklines=true]
+void SerialApplyFoo( float a[], size_t n ) {
+	for( size_t i=0; i!=n; ++i ) {
+		Foo(a[i]);
+	}
+}
+\end{lstlisting}
+\begin{lstlisting}[language=c++, caption={Funktion mit parallel-for-Template(Quelle: \parencite{intelTBBtutorial})}, captionpos=b, label=lst:phiTBBparallelFor, frame=single, linewidth=\textwidth, breaklines=true]
+#include "tbb/tbb.h"
+
+using namespace tbb;
+
+void ParallelApplyFoo( float a[], size_t n ) {
+	tbb::parallel_for( size_t(0), n, [&]( size_t i ) {
+		Foo(a[i]);
+	} );
+}
+\end{lstlisting}
+Im Gegensatz zu OpenMP arbeitet TBB nicht mit |#pragma|-Anweisungen und ist somit nicht auf die Unterstützung des verwendeten Compilers angewiesen. Allerdings existiert TBB derzeit nur für die Programmiersprache C++. Für viele Features werden Lambda-Ausdrücke benötigt, die erst ab dem Sprachstandard C++11 definiert sind. Die Verwendung eines Taskschedulers erzeugt zwar zur Laufzeit einen geringen Overhead, bei hinreichend großen und komplexen Operationen lässt sich mit TBB allerdings trotzdem eine höhere Performance erzielen als mit OpenMP. (vgl. \cite{xeonphiBestPractices})
 
 \section{Intel Math Kernel Library}
 
