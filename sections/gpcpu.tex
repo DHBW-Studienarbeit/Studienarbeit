@@ -171,25 +171,13 @@ Jede dieser Layer besitzt mehrere Zeiger auf Tensoren. Jeder Layer hat Zeiger au
 Alle Layer beinhalten die Methoden \texttt{generate()}, \texttt{forward()}, \texttt{backward()} und \texttt{fix\_weights()}.
  Die \texttt{generate()} Methode benötigt als Parameter Zeiger zu den Tensoren der Activation und der Gradienten der Activation des Layers. Diese sind, ausgenommen des ersten Layers in einem Netzwerk, die Outputs der vorherigen Layer. Die \texttt{generate()} Methode berechnet aufgrund der Parameter der Methode und der Parameter des Konstruktors des Layers die Größen alles Tensoren die vom Layer verwendet werden.
 Die Funktionen \texttt{forward()} und \texttt{backward()} nehmen keine Parameter an. Erstere wird aufgerufen, um die Inputs der Neuronen durch das Netzwerk zu propagieren. Letztere wird aufgerufen, um die Fehler zurück zu propagieren. 
-Bevor die \texttt{backward()} Methode aufgerufen werden kann, muss der Fehler im letzten Layer berechnet werden und die inverse Signoid-Funktion angewendet werden. Die Formel für die Berechnung des Fehlers ist in \ref{eq:fehler_in_letztem_layer} zu sehen.
+Bevor die \texttt{backward()} Methode aufgerufen werden kann, muss der Fehler im letzten Layer berechnet werden und in den Tensor der Gradienten gespeichert werden. Die Formel für die Berechnung des Fehlers, bei Verwendung von Quadratic Coast als Kostenfunktion, ist in \ref{eq:fehler_in_letztem_layer} zu sehen.
 \begin{equation}\label{eq:fehler_in_letztem_layer}
 \begin{split}
-\delta = \frac{1}{2n} \sum_{x}^{} ||y(x)-a(x)||^{2}
+\frac{\partial C}{\partial a_j^L} = ( a_j^L - y_j )
 \end{split}
 \end{equation}
-Der Code, der diese Formel ausführt, sieht folgendermaßen aus.
-\begin{lstlisting}[language=c++, caption=Code vor der Backpropagation, captionpos=b, label=listing:code_befor_backprop, frame=single, linewidth=\textwidth, breaklines=true]
-for(int i=0; i < 10; i++){
-   if(picture->get_output()[i] == 1.0f){
-      layers->back()->fully_connected_layer->output_grads->getArray()[i] = layers->back()->fully_connected_layer->output->getArray()[i] -1.0f;
-      layers->back()->fully_connected_layer->output_grads->getArray()[i] *= mathematics::sigmoid_backward_derivated_once(layers->back()->fully_connected_layer->output->getArray()[i]);
-   }
-   else{
-      layers->back()->fully_connected_layer->output_grads->getArray()[i] = layers->back()->fully_connected_layer->output->getArray()[i];
-      layers->back()->fully_connected_layer->output_grads->getArray()[i] *= mathematics::sigmoid_backward_derivated_once(layers->back()->fully_connected_layer->output->getArray()[i]);
-   }
-}
-\end{lstlisting}
+$a_j^L$ ist hierbei ein Output im Letzten Layer und $y_j$ das dazu gehörende gewünschte Ergebnis. Auf die partielle Ableitung der Kostenfunktionen nach dem Output wird anschließend noch die inversen Sigmoid-Funktion angewandt.
 
 Durch die Funktion \texttt{fix\_weights()} werden die Deltas benutzt, um die Gewichte und die Biases anzupassen. Dabei wird die Batch-Größe angegeben sowie die Trainingsrate. Nach Aufruf dieser Funktion werden alle Deltas auf 0 gesetzt. Dadurch kann eine Batch von Inputs verwendet werden, da die Funktion \texttt{backward()} die Deltas von Biases und Gewichten auf den bestehenden Wert addiert.
 
@@ -298,7 +286,38 @@ for(int z_pos=0; z_pos < output->getZ(); z_pos++){
 }
 \end{lstlisting}
 
-Der Vorteil dieser Methode, im Vergleich zur vorherigen Methode, ist die einfache Umsetzung von SIMD Instruktionen in diesem Code. Werden AVX-Register verwendet, können immer 8 der Gewichte in ein mmx-Register geladen werden. In ein zweites Register müssen die Werte der Activation geladen werden. Anschließend können die erhaltenen Ergebnisse zusammenaddiert werden.
+Der Vorteil dieser Methode, im Vergleich zur vorherigen Methode, ist die einfache Umsetzung von SIMD Instruktionen in diesem Code. Werden AVX-Register verwendet, können immer 8 der Gewichte in ein mmx-Register geladen werden. In ein zweites Register müssen die Werte der Activation geladen werden. Anschließend können die erhaltenen Ergebnisse zusammenaddiert werden. Dies wird solange wiederholt, bis alle Multiplikationen für einen Output des Layers abgeschlossen sind.
 Ein weiterer Vorteil ist die Tatsache, dass die Sigmoid-Funktion direkt innerhalb der Schleife angewandt werden kann. Bei der Implementierung, in der die Activation in der äußeren Schleife durchgegangen wird, muss die Sigmoid-Funktion in einer separaten Schleife auf alle Outputs angewandt werden.
+
+Für die explizite Verwendung der AVX-Register wurde dieser Code entwickelt, der innerhalb der äußeren drei Schleifen eingesetzt werden muss. Es werden immer acht Multiplikationen für einen Output gleichzeitig ausgeführt. Ist Anzahl der Multiplikationen nicht durch 8 teilbar, werden mit der letzten SIMD-Anweisung weniger Multiplikationen ausgeführt. Alle Ergebnisse für einen Faltungskern werden zusammenaddiert und in den Output geschrieben.
+
+\begin{lstlisting}[language=c++, caption=Implementierung des Convolutional Layers mit AVX, captionpos=b, label=listing:conv_avx, frame=single, linewidth=\textwidth, breaklines=true]
+int z_stop = (z_pos+1)*activation->getZ();
+
+float array [8];
+
+for(int w_z_pos = z_pos*activation->getZ(); w_z_pos < z_stop; w_z_pos++){
+
+mmx1 =  _mm256_loadu_ps(weight->getArray(w_z_pos));
+int mmx_index = 0;
+
+for(int w_y_pos = 0; w_y_pos < weight->getY(); w_y_pos++){
+   for(int w_x_pos = 0; w_x_pos < weight->getX(); w_x_pos++){
+   
+      array[mmx_index%8]=activation->getArray(w_z_pos%activation->getZ(), y_pos+w_y_pos)[x_pos+w_x_pos];
+      mmx_index++;
+      if(mmx_index%8 == 7 || mmx_index == weight->getSize()-1){
+         mmx2 = _mm256_loadu_ps(array);
+         mmxres = _mm256_mul_ps(mmx1, mmx2);
+         float *f = (float*)&mmxres;
+         for(int i=0; i < 8 && mmx_index+i < weight->getSize(); i++){
+            output->getArray(z_pos,y_pos)[x_pos] += f[i];
+         }
+         mmx1 =  _mm256_loadu_ps(weight->getArray(w_z_pos)+mmx_index);
+      }
+      
+   }
+}
+\end{lstlisting}
 
 \end{document}
