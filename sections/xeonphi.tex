@@ -235,9 +235,19 @@ Tatsächlich soll der serielle Teil des zu erstellenden Programms möglichst sch
 \subsection{Codegenerierung}
 Zu den Anforderungen gehört auch eine Änderbarkeit des verwendeten Netzwerkmodells und der Programmkonfiguration. 
 Eine gute Änderbarkeit ist dann gegeben, wenn das Netzwerkmodell an nur einer Stelle geändert werden muss, um das Programm anzupassen. Die gebräuchlichste Möglichkeit, diese Änderbarkeit zu erreichen, ist die Definition einer Liste von Objekten einer gemeinsamen Basisklasse, die die einzelnen Netzwerkschichten repräsentieren. Zur Veränderung des Netzwerkmodells müsste nur die Initialisierung dieser Liste geändert werden. Bei der Simulation des Netzwerkes könnte dann auf verschiedene Implementierungen von Methoden zurückgegriffen werden, die für die verschiedenen Layertypen definiert sind. 
-Dieser Ansatz steht allerdings in Widerspruch zur Entscheidung, auf dynamische Typbindung und somit Vererbung zu verzichten. 
+Dieser Ansatz steht allerdings in Widerspruch zur Entscheidung, auf dynamische Typbindung und somit Vererbung zu verzichten. Um eine objektorientierte Beschreibung des Netzwerks zu ermöglichen und gleichzeitig alle Strukturen und Methoden statisch zu binden, wird die Implementierung des CNNs für den Xeon Phi in zwei Programme aufgeteilt: 
+
+Der erste Teil ist ein Python-Skript, das ähnlich wie bei Tensorflow ein neuronales Netzwerk anhand seiner Schichten und deren Eigenschaften beschreibt. Außerdem werden in diesem Skript einige Einstellungen festgelegt, die das Verhalten des Programms während des Trainings festlegen. 
+
+Der zweite Teil ist das eigentliche Programm zum Trainieren des Netzwerks. Dieses ist in C geschrieben und benötigt an mehreren Stellen Informationen über den Aufbau des Netzes und Details über einzelne Schichten. An diesen Stellen wird C-Code generiert, der alle notwendigen Informationen bereits enthält. Teilweise können dadurch Berechnungen schon vor der Übersetzung durchgeführt und deren Ergebnisse als Konstanten in den Code eingefügt werden. Die Verwendung von Konstanten anstatt zur Laufzeit berechneter Variablen ermöglicht es dem Compiler, den ausführbaren Code zusätzlich zu optimieren und Speicherzugriffe zu reduzieren. 
+
+Zur Codegenerierung wird das Python-Tool |cog| verwendet. Dieses Tool kann Textdateien nach speziell formatierten Zeilen durchsuchen. Diese Zeilen markieren den Anfang und das Ende eines Python-Codes. Dieser Python-Code erzeugt eine Ausgabe, die zwischen dem Ende des markierten Abschnitts und einer dritten Markierung eingefügt wird. Die Markierungen sind so gewählt, dass der Python-Code aus Sicht des C-Programms wie ein Kommentar erscheint. 
+
+Zum Ändern des Netzwerkmodells oder der Konfiguration genügt es, das entsprechende Python-Skript anzupassen und anschließend |cog| mit einigen Quellcodedateien des C-Codes aufzurufen. Der dabei entstehende Code kann anschließend in ein lauffähiges Programm übersetzt werden, das der zuvor festgelegten Konfiguration entspricht. 
 
 \subsection{Datenorganisation}
+
+
 
 \subsection{Convolution und Pooling}
 
