@@ -9,6 +9,8 @@ Eine weitere Optimierungsmöglichkeit ergibt sich aus der Tatsache,  dass CPUs h
 
 Zur Entwicklung des Programms wurde Eclipse CDT verwendet und als Compiler gcc, ein weit verbreiteter Compiler mit einer großen Open Source Comunity. Dieser kann mit sehr vielen Flags aufgerufen werden, um den Compiliervorgang optimal einzustellen.
 
+Ein optimiertes Neuronales Netzwerk auf der General Purpose x86 CPU wurde im Rahmen dieser Arbeit nicht erfolgreich Implementiert. Alle Funktionen eines Neuronalen Netzwerkes wurde zwar implementiert und bei einer geringen Menge von Trainingsdaten werden diese nach vielen Iterationen auch richtig erkannt. das Erkennen von neuen Daten ist jedoch selbst nach einer langen Zeitspanne zum Trainieren nicht möglich und die Iterationen zum Trainieren des Netzwerkes sind um ein vielfaches höher als von anderen Implementierungen des selben Netzes. Dabei muss es sich um einen Fehler in der Implementierung handeln, der bis zum Ende der Zeit für die Studienarbeit nicht gefunden werden konnte. 
+
 \section{OpenMP (Open Multi Procesing)}
 
 Aktuelle CPUs, ob im Arbeitsrechner, Laptop, Tablet oder Smartphone, besitzen inzwischen mehrere CPU-Kerne. Um das volle Potenzial der dieser CPUs auszunutzen ist es zwingend notwendig, Programme zu parallelisieren, sodass Programmabschnitte auf mehreren Kernen gleichzeitig ausgeführt werden können.
@@ -28,7 +30,7 @@ Im folgenden Abschnitt sind alle Programmbeispiele in C- oder C++-Syntax gehalte
 
 Zuerst muss die Datei \texttt{omp.h} includiert werden. Nun kann die Compiler-Direktive \texttt{\#pragma\ omp\ parallel} angegeben werden. Die Direktive muss über einen festgelegten Codeabschnitt geschrieben werden. Der Codeabschnitt wird von geschwungenen Klammern umschlossen. Mithilfe dieser Direktive und OpenMP wird der folgende Programmabschnitt parallel ausgeführt. Von Compilern, die OpenMP nicht unterstützen, wird diese Zeile ignoriert. Somit kann der gleiche Programmcode als paralleles oder als serielles Programm compiliert werden.
 
-\subsubsection{Variablen}
+\subsection{Variablen}
 
 Variablen können entweder privat oder gemeinsam innerhalb eines parallelen Abschnitts deklariert werden. Eine gemeinsame Variable kann von verschiedenen Threads genutzt werden, während eine private Variable für jeden Thread einen anderen Wert annehmen kann. Gemeinsame Variablen werden mit dem Parameter \texttt{shared(Liste\_der\_Variablen)} deklariert. In der Liste werden alle Variablen hineingeschrieben, die gemeinsam genutzt werden sollen. Die Variablen sind mit dem Wert initialisiert, die sie vor dem Fork hatten. Private Variablen können hingegen mit \texttt{private(Liste\_der\_Variablen)} deklariert werden.  Anders als die Gemeinsamen Variablen sind diese anfangs nicht initialisiert, mit Ausnahme von Objekten die einen Konstruktur besitzen und Indexvariablen von Schleifen. Diese Variablen müssen dann im parallelen Code initialisiert werden. 
 Soll der Wert, den die Variable vor Beginn der parallelen Ausführung hatte, im parallelen Abschnitt verwendet werden, muss dafür der zusätzliche Parameter \texttt{firstprivate(Liste\_der\_Variablen)} verwendet werden. Der letzte Wert vor Ausführung des Forks wird dann als Anfangswert der privaten Kopien verwendet. Soll der Wert der Variable nach dem Join im weiteren Programmablauf verwendet werden, muss hierfür der zusätzliche Parameter \texttt{lastprivate(Liste\_der\_Variablen)} verwendet werden. Dabei wird der Wert, den die Variable bei serieller Ausführung am Ende des Abschnitts hätte als Wert für die Variable nach dem Join verwendet. Es ist auch möglich, dass eine Variable in beiden dieser zusätzlichen Parameter enthalten ist.
@@ -39,11 +41,11 @@ Eine weitere Möglichkeit der Deklaration von Variablen ergibt sich durch die Re
 Das Default-Verhalten lässt sich jedoch auch ändern, dafür gibt es die Datenzugriffsklausel \texttt{default(zugriffsverhalten)}. Hier kann auch der Wert \texttt{none} angegeben werden. Dann gibt es für jede Variable, für die nicht explizit das Zugriffsverhalten angegeben wurde, beim compilieren einen Fehler. Dies kann für Testzwecke in den Code eingebaut werden, um sich für jede Variable explizit Gedanken zu machen.
 Variablen können nur in einer Datenzugriffsklausel vorkommen, also nicht gleichzeitig privat und shared deklariert sein.
 
-\subsubsection{Parallelisierung}
+\subsection{Parallelisierung}
 
 Parallele Abschnitte des Programms beginnen immer mit der Direktiven \texttt{\#pragma omp parallel}. Der sich innerhalb der geschwungenen Klammern befindende Code wird dann vom Compiler, wenn er OpenMP unterstützt, als parallelen Code übersetzt. Der Auszuführende Code ist hierbei, ohne Angabe weiterer Direktiven, in jedem Thread derselbe. 
 
-Die Nummer des Threads, der den Aktuellen Code ausführt, kann mit \texttt{omp\_get\_thread\_num} ermittelt werden. Die Gesamtanzahl der Threads wird bei Aufruf von \texttt{omp\_get\_num\_threads} zurückgegeben.
+Die Nummer des Threads, der den Aktuellen Code ausführt, kann mit \linebreak \texttt{omp\_get\_thread\_num} ermittelt werden. Die Gesamtanzahl der Threads wird bei Aufruf von \texttt{omp\_get\_num\_threads} zurückgegeben.
 
 Die bei der Implementierung des Neuronalen Netzwerkes am meisten verwendete Direktive von OpenMP ist \texttt{\#pragma omp for [Parameter]}. Diese muss vor eine For-Schleife innerhalb eines parallelen Abschnittes gesetzt werden. Die For-Schleife wird dann parallel abgearbeitet, wobei jeder Thread nur eine Teilmenge der Iterationen abarbeitet. Eine Bedingung zur Verwendung dieser Direktiven ist, dass die Schleife in kanonischer Form vorliegt. Für die kanonische Form muss die Anzahl der Durchläufe dafür schon vor Beginn des ersten Durchlaufs berechenbar sein. Außerdem darf kein Ergebnis eines Schleifendurchlaufs zur Berechnung eines Ergebnis in einem anderen Durchlauf benötigt werden. Die Operation zum Vergleichen der Zählvariable darf nur \texttt{>, >=, <} oder texttt{<=} annehmen und die Zählvariable darf nicht durch eine Multiplikation oder Division erhöht oder verringert werden
 
@@ -79,7 +81,63 @@ Weitere Funktionen zur Parallelisierung mit Hilfe von OpenMP wurden für diese A
 Für verschiedenen Bereiche, die unabhängig voneinander sind und parallel ausgeführt werden sollen, kann \texttt{\#pragma imp parallel section [Parameter]} verwendet werden.
 Für kritische Abschnitte gibt es \texttt{\#pragma omp critical [(name)]} und eine Barriere kann mit \texttt{\#pragma omp barrier} erzeugt werden.
 
-\section{Programmstruktur}
+\section{Verwendung von SIMD auf x86 Architektur}
+
+Eine weitere Optimierung ergibt sich durch die Verwendung von SIMD (Single Instruction, Multiple Data) Operationen.  Neue CPUs von Intel und AMD besitzen spezielle Register, auf die SIMD Operationen angewandt werden können. 
+Die ersten SIMD Operationen auf der x86-Architektur von Intel wurden 1997 durch die Veröffentlichung von Prozessoren mit der Multi Media Extension (MMX) eingefügt. Die MMX beinhaltete 8 Register mit einer Größe von 64 Bit, die packed Integer Werte annehmen kann. Die Register hießen \texttt{mm0} bis \texttt{mm7}.
+Von packed ist die Rede, wenn ein Register größer als der Datentyp den es speichert. Anstelle den Wert des Datentyps in den niedrigsten Bits zu speichern, werden mehrere Werte des Datentyps hintereinander in das Register geschrieben, um so die ganze Breite des Registers auszunutzen.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/avx_packed_scalar.png}
+	\caption{Anordnung von Floats und Double in einem AVX SIMD Register} 
+	\label{fig:avx_packed_scalar}
+\end{figure}
+
+Die Größe der Register wurde 1999 durch die Einführung von SSE, der Streaming SIMD Extension, verdoppelt. Der Namen der Register änderte sich zu \texttt{xmm0} bis \texttt{xmm7}. Die SSE erlaubte anfangs nur das packen von single precision floating points, was dem Datentyp Float entspricht. Die nächsten Jahre wurden mehrere Verbesserungen der SSE in neuere Generationen der CPUs verbaut, so unterstützten CPUs mit der SSE3 Hyper-Threading von SIMD Instruktionen.
+2011 wurde AVX, Advanced Vector Extension, in der neuen Mikroarchitektur Sandy Bridge eingebaut. Diese fügte zu den Registern xmm0 bis mm7 die Register ymm0 bis ymm7 hinzu. Die Register können zu 8 großen Registern zusammengefasst werden, sodass die Registergröße für eine SIMD Operation 256 Bit beträgt. Auf CPUs mit 64 Bit Adressierung wächst die Anzahl der Register auf 16. 2013 wurde ein erweiterter Instruktionssatz, genannt AVX2, in die damals aktuelle Haswell Architektur eingebaut.
+Die neuste Entwicklung im SIMD Umfeld nennt sich AVX-512. Dabei wird die Anzahl der Register nochmal verdoppelt auf 32 Register und es werden die neuen Register zmm0 bis zmm31 hinzugefügt. Diese haben eine Breite von 256 Bit. Werden die neuen Register mit den bereits aus der AVX vorhandenen Register zusammengefasst, erhöht sich die Datenbreite auf 512 Bit. Diese Version von AVX ist jedoch bis jetzt nur in sehr teuren CPUs, die für das Server Umfeld gedacht sind, enthalten (vgl. \cite{IntelAvx512}).
+Ein Vergleich aller Register ist in der Grafik unterhalb zu erkennen.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/simd_avx_sse_mmx.png}
+	\caption{Übersicht der Größe von SIMD Registern der x86 Architektur} 
+	\label{fig:simd_avx_sse_mmx}
+\end{figure}
+
+Eine für diese Arbeit interessante Funktion der SIMD Instruktionen von neuen x86 Architekturen ist die Multiplikation von Float Zahlen. Durch AVX-512 lassen sich bei einer neuen CPUs bis zu 16 Floats in einem Register unterbringen und mit einer Instruktion multiplizieren. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Desweiteren wird ein Register benötigt, in dem das Ergebnis gespeichert werden soll. Durch Aufrufen des Befehls zur Multiplikation werden das n-te Float in Register a mit dem n-ten Float in Register b multipliziert und in ein Zielregister geschrieben.
+Da die neuste AVX-Version AVX-512 nur in wenigen CPUs integriert ist, wird in dieser Arbeit lediglich die ältere Version AVX2 verwendet.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/avx.png}
+	\caption{Multiplikation von 8 Floats durch eine SIMD Anweisung} 
+	\label{fig:avx}
+\end{figure}
+
+In der Grafik werden 8 Multiplikationen von Floats mit der Instruktion \linebreak  \texttt{\_mm256\_mul\_ps()} gleichzeitig ausgeführt. Die \texttt{256} gibt hierbei an, wie groß die Register sind. In diesem Fall sind die Register 256 Bit groß. Anschließend wird die Rechenart angegeben, hier eine Multiplikation (\texttt{mul}). Das \texttt{p} steht hierbei für "packed". Alternativ kann ein \texttt{s} für "single slot" angegeben werden, dann wird lediglich an der hintersten Position ein Wert des Datentyps erwartet und für die Multiplikation verwendet. An letzter Stelle steht ein \texttt{s}. Dieses steht für "single precision", was dem Datentyp Float entspricht. Bei einem \texttt{d} an dieser Stelle wird "pouble precission", was dem Datentyp Double entspricht, angenommen.
+
+Eine Übersicht aller SIMD-Instruktionen von Prozessoren mit aktueller x86-Architektur und findet sich unter \url{https://software.intel.com/sites/landingpage/IntrinsicsGuide}. Hier kann auch gesehen werden, mit welcher Erweiterung der SIMD Instruktionen ein Befehl einführt wurden ist.
+
+Durch die Verwendung von AVX lässt sich die Zeit zum Multiplizieren von mehreren Floats, im Vergleich zur standardmäßigen Multiplikation, prinzipiell bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 (Compilerflag \texttt{-O3}) for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. Durch das Compiler-Flag \texttt{-ftree-vectorizer-verbose=2} wird bei jeder Schleife ausgegeben, ob gcc den Code vektorisieren konnte und somit den Code mit SIMD-Instruktionen übersetzt hat oder nicht.
+
+Die Instruktionen können jedoch auch explizit aufgerufen werden, sodass nicht der Compiler die Entscheidung übernimmt, wo und wie optimiert werden soll, sondern dies der Programmierer selbst Entscheiden kann. 
+
+Für das Laden von Floats in ein AVX-Register gibt es mehrere Möglichkeiten. Um Werte an expliziter Stelle des Registers zu schreiben, gibt es den Befehl \texttt{\_mm256\_set\_ps(a8,a7,a6,a5,a4,a3,a2,a1)}. Der erste Parameter der Funktion wird hierbei an der letzten Stelle innerhalb des Registers geschrieben. Um einen Wert an alle Stellen des Registers zu schreiben, kann \texttt{\_mm256\_set1\_ps(a1)} verwendet werden. Mit \texttt{\_mm256\_load\_ps(addr)} kann eine Adresse übergeben werden und die folgenden Werte an dieser Adresse werden in das Register geschrieben. 
+Um das Ergebnis wieder als Floats anzusprechen, muss der Pointer zum Ergebnisregister als Pointer zu einem Float-Array gecastet werden.
+
+\begin{lstlisting}[language=c++, caption=Multiplikation mit AVX, captionpos=b, label=listing:avx_multiplikation, frame=single, linewidth=\textwidth, breaklines=true]
+float array[8]=[1,2,3,4,5,6,7,8];
+_m256 a = _mm256_set_ps(8,7,6,5,4,3,2,1);
+_m256 b = _mm256_load_ps(array);
+_m256 res = _mm256_mul_ps(a,b);
+float *f = (float*)&res;
+\end{lstlisting}
+An Adresse \texttt{f} stehen nun die ersten 8 Quadratzahlen, die alle mit der Instruktion \texttt{\_mm256\_mul\_ps} auf einmal errechnet wurden.
+
+
+\section{Implementierung}
 
 Zur Implementierung des Convolutional Neural Networks auf einer x86-Architektur wurde die serielle Implementierung als Grundlage verwendet. Diese wurde genauer in Kapitel \nameref{chap:seriell} beschrieben. Zur optimierten Ausführung auf einer x86-CPU muss das Programm umgeschrieben werden. Folgende Methoden wurden zur Optimierung verwendet:
 \begin{itemize}
@@ -94,7 +152,7 @@ Für jegliche Inputs und Outputs aller Layer wurde die Klasse \texttt{Tensor} er
 Im Konstruktor werden die Werte von \texttt{x}, \texttt{y} und \texttt{z} übergeben. Es gibt auch Konstruktoren mit nur 2 oder nur 1 Parameter, die anderen Dimensionen werden dann aus 1 gesetzt. Die Tensor-Klasse kann somit auch Matritzen oder Vektoren abbilden. \par 
 Das Array hat als Länge das Produkt aus allen 3 Dimensionen. Die Reihenfolge ist hierbei so angeordnet, wie die Leserichtung eines Buches. Es wird immer eine Zeile durchgegangen, bevor die nächste Zeile im Speicher liegt. Ist die letzte Zeile einer Seite erreicht, liegt die erste Zeile der nächsten Seite im Speicher bis der Tensor vollständig im Speicher abgebildet ist. \par
 Die Tensor-Klasse bietet Funktionen, um die Adresse des Arrays an bestimmten Stellen zu finden. Dabei wird zuerst die z-Position und Anschließend die y-Position angegeben.
-\begin{lstlisting}[language=c++, caption=Convolution: Activation durchgehen, captionpos=b, label=listing:conv_activation, frame=single, linewidth=\textwidth, breaklines=true]
+\begin{lstlisting}[language=c++, caption=Funktion zum Erhalten eines Pointers auf den Tensor, captionpos=b, label=listing:tensor_get_array, frame=single, linewidth=\textwidth, breaklines=true]
 float *Tensor::getArray(int z, int y){
 	assert(z<this->z);
 	assert(y<this->y);
@@ -102,25 +160,52 @@ float *Tensor::getArray(int z, int y){
 }
 \end{lstlisting}
 Die x-Position kann bei dieser Funktion nicht angegeben werden. Um die genaue Adresse zu erhalten, muss ein Offset in Höhe der x-Position angegeben werden. Danach zeigt der Zeiger auf die gewünschte Stelle. Durch die Verwendung eines Zeigers, kann die Funktion sowohl zum Lesen als auch zum Schreiben an dieser Position verwendet werden.
-\begin{lstlisting}[language=c++, caption=Convolution: Activation durchgehen, captionpos=b, label=listing:conv_activation, frame=single, linewidth=\textwidth, breaklines=true]
+\begin{lstlisting}[language=c++, caption=Verwendung der getArray()-Funktion, captionpos=b, label=listing:verwendung_get_array, frame=single, linewidth=\textwidth, breaklines=true]
 zeiger = tensor->getArray(z_pos, y_pos)[x_pos];
 \end{lstlisting}
 Die Klasse besitzt noch Funktionen, um die Größe des Tensors in die drei verschiedenen Dimensionen auszugeben. Dadurch kann mit drei verschachtelten For-Schleifen einfach durch alle Elemente iteriert werden.
 
-\subsection{Layertypen}
+\subsection{die verschiedenen Layertypen}
 Es gibt drei verschiedene Layertypen. Diese sind der Convolutional Layer, der Max Pooling Layer und der Fully Connected Layer. Um diese drei verschiedenen Layer in einer gemeinsamen Liste zu speichern, wurde ein Union mit dem Namen \texttt{Layer} erstellt. Dieses Union kann einen dieser 3 Datentypen annehmen. 
 Jede dieser Layer besitzt mehrere Zeiger auf Tensoren. Jeder Layer hat Zeiger auf Tensoren die die Activation, den Output und den Gradienten des Layers und des Layers davor darstellen. Mit Ausnahme des Max Pooling Layers gibt es noch Zeiger auf Gewichte und Biases, sowie Tensoren mit den Deltas der Gewichte und Biases. Der Zeiger auf den Output eines Layers hat den selben Wert wie der Zeiger des Inputs des folgenden Layers. Somit weden die Tensoren von mehreren Layern verwendet, einmal als Input und einmal als Output. Das Gleiche gilt für die Gradienten. Die Tensoren sind so aufgebaut, dass die x und y Dimension ein Muster darstellt und mit der z-Position die verschiedenen Muster ausgewählt werden.
 Alle Layer beinhalten die Methoden \texttt{generate()}, \texttt{forward()}, \texttt{backward()} und \texttt{fix\_weights()}.
  Die \texttt{generate()} Methode benötigt als Parameter Zeiger zu den Tensoren der Activation und der Gradienten der Activation des Layers. Diese sind, ausgenommen des ersten Layers in einem Netzwerk, die Outputs der vorherigen Layer. Die \texttt{generate()} Methode berechnet aufgrund der Parameter der Methode und der Parameter des Konstruktors des Layers die Größen alles Tensoren die vom Layer verwendet werden.
 Die Funktionen \texttt{forward()} und \texttt{backward()} nehmen keine Parameter an. Erstere wird aufgerufen, um die Inputs der Neuronen durch das Netzwerk zu propagieren. Letztere wird aufgerufen, um die Fehler zurück zu propagieren. 
+Bevor die \texttt{backward()} Methode aufgerufen werden kann, muss der Fehler im letzten Layer berechnet werden und die inverse Signoid-Funktion angewendet werden. Die Formel für die Berechnung des Fehlers ist in \ref{eq:fehler_in_letztem_layer} zu sehen.
+\begin{equation}\label{eq:fehler_in_letztem_layer}
+\begin{split}
+\delta = \frac{1}{2n} \sum_{x}^{} ||y(x)-a(x)||^{2}
+\end{split}
+\end{equation}
+Der Code, der diese Formel ausführt, sieht folgendermaßen aus.
+\begin{lstlisting}[language=c++, caption=Code vor der Backpropagation, captionpos=b, label=listing:code_befor_backprop, frame=single, linewidth=\textwidth, breaklines=true]
+for(int i=0; i < 10; i++){
+   if(picture->get_output()[i] == 1.0f){
+      layers->back()->fully_connected_layer->output_grads->getArray()[i] = layers->back()->fully_connected_layer->output->getArray()[i] -1.0f;
+      layers->back()->fully_connected_layer->output_grads->getArray()[i] *= mathematics::sigmoid_backward_derivated_once(layers->back()->fully_connected_layer->output->getArray()[i]);
+   }
+   else{
+      layers->back()->fully_connected_layer->output_grads->getArray()[i] = layers->back()->fully_connected_layer->output->getArray()[i];
+      layers->back()->fully_connected_layer->output_grads->getArray()[i] *= mathematics::sigmoid_backward_derivated_once(layers->back()->fully_connected_layer->output->getArray()[i]);
+   }
+}
+\end{lstlisting}
+
 Durch die Funktion \texttt{fix\_weights()} werden die Deltas benutzt, um die Gewichte und die Biases anzupassen. Dabei wird die Batch-Größe angegeben sowie die Trainingsrate. Nach Aufruf dieser Funktion werden alle Deltas auf 0 gesetzt. Dadurch kann eine Batch von Inputs verwendet werden, da die Funktion \texttt{backward()} die Deltas von Biases und Gewichten auf den bestehenden Wert addiert.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/UML_Layer.png}
+	\caption{UML-Diagramm der Layer} 
+	\label{fig:uml_layer}
+\end{figure}
 
 Ein Max Pooling Layer erwartet als Parameter im Konstruktor die Schrittweite, in dem das Max Pooling stattfinden soll. Die Größe des Outputs ist der Quotient der Dimensionen des Inputs dividiert durch die Schrittweite in dieser Dimension. Die z-Dimensionen des Inputs und des Outputs sind die selben. Dasselbe gilt für die Gradienten. In der \texttt{forward()} Methode wird immer das Maximum im gewünschten Bereich gesucht und anschließend in den Output geschrieben. Die \texttt{backward} Methode leitet den Gradienten des Layers danach an die Position, die den maximalen Bereich in diesem Bereicht hatte, weiter. Die Klasse hat den Namen \texttt{MaxPoolingLayer}
 
 Die Klasse \texttt{FullyConnectedLayer} erwartet im Konstruktor die Anzahl der Neuronen in diesem Layer. Der Output ist ein Vektor mit dieser Anzahl an Elementen. Der Vektor wird als Tensor mit allen Dimensionen, außer der x-Dimension, auf 1 abgebildet. Als Gewichts-Tensor wird die Dimension der Activation verwendet, die x-Dimension wird jedoch mit der Neuronenanzahl des Layers multipliziert. Die Gewichte für einen Output sind damit sehr einfach zu finden und es kann sich ein beliebiger Layer vor dem Fully Connected Layer befinden, ohne den Code für die verschiedenen Layertypen zu ändern. Der Bias-Tensor hat die gleiche Dimension wie der Output-Tensor.
 
 \texttt{ConvLayer} ist der Klassennamen für den Convolutional Layer. Im Constructor wird die Größe der Faltungskerne, die Anzahl der zu ermittelnten Features und die Schrittweise zum Abfahren der Activation angegeben. Die Größe des Outputs lässt sich mit dieser Formel berechnen.
-\begin{equation}[label=equation:cnn_outout_size]
+\begin{equation}\label{eq:cnn_outout_size}
 \begin{split}
 size_{output} = \frac{size_{input} -size_{faltungskern} +1}{schrittweite}
 \end{split}
@@ -135,9 +220,15 @@ Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer, da
 
 Bei der seriellen Implementierung werden die benötigten Elemente der Activation für eine Faltungsoperation in einen temporären Vektor geschrieben. Dieser Vektor wird anschließend mit einer Gewichts-Matrix multipliziert. Dies stellt die Faltung mit allen Kernen für diese Elemente der Activation dar. Das Ergebnis der Multiplikation wird wiederum in einen anderen temporären Vektor gespeichert, zu welchem ein Bias Vektor elementweise addiert wird. Das Ergebnis sind die Elemente des Outputs an einer Stelle in allen Features. Die Vorgehensweise ist in der Grafik unterhalb zu sehen.
 
-\includegraphics[width=\textwidth]{../images/Benz/Conv_Layer_Seriel.png} %Grafik Ablauf Convolutional Layer Seriell
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/Conv_Layer_Seriel.png} %Grafik Ablauf Convolutional Layer Seriell
+	\caption{Ablauf des Convolutional Layers in der seriellen Implementierung} 
+	\label{fig:conv_layer_seriell}
+\end{figure}
 
-Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies kann sich vermeiden lassen, indem man die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt an die Zieladresse schreibt. 
+
+Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies lässt sich vermeiden, indem die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt an die Zieladresse geschrieben werden. 
 
 Es wurde sich für eine Methode entschieden, bei der zuerst der Output-Tensor auf 0 gesetzt wird. Anschließend wird jedes Element vom Activation-Tensor durchgegangen. Je nachdem, wo sich das Element im Activation-Tensor befindet, gibt es verschiedene Elemente der Gewichts-Matritzen, mit denen es multipliziert werden muss. Beispielweise muss das erste Element links oben nur mit dem Element links oben des Faltungskerns multipliziert werden, währenddessen Elemente in der Mitte des Input-Tensors mit allen Elementen des Faltungskerns multipliziert werden müssen. Die Ergebnisse müssen je nach Element des Faltungskerns an verschiedenen Stellen im Output geschrieben werden.
 Die entsprechenden Elemente des Faltungkerns werden mit zwei if-Bedingungen ermittelt. Bei diesen if-Bedingungen wird der Start- und der Endindex für beide Dimensionen eines Faltungskerns durch die Position des Elements in der Activation ermittelt. Anschließend werden diese Werte des Faltungskerns mit dem einen Element des Inputs multipliziert und die Ergebnisse an die richtige Stelle des Output-Tensors hinzugefügt.
@@ -194,8 +285,7 @@ for(int z_pos=0; z_pos < output->getZ(); z_pos++){
    for(int y_pos = 0; y_pos < output->getY(); y_pos++){
       for(int x_pos = 0; x_pos < output->getX();x_pos++){
       
-         //TODO: Zeile noch nicht korrekt
-         for(int w_z_pos=0;w_z_pos < weight->getZ();w_z_pos+=activation->getZ()){
+         for(int w_z_pos=z_pos;w_z_pos < weight->getZ();w_z_pos+=activation->getZ()){
          
             for(int w_y_pos = 0; w_y_pos <= weight->getY() ; w_y_pos+){
                for(int x_pos = 0; x_pos <= weight->getX() ; w_x_pos++){
@@ -208,45 +298,7 @@ for(int z_pos=0; z_pos < output->getZ(); z_pos++){
 }
 \end{lstlisting}
 
+Der Vorteil dieser Methode, im Vergleich zur vorherigen Methode, ist die einfache Umsetzung von SIMD Instruktionen in diesem Code. Werden AVX-Register verwendet, können immer 8 der Gewichte in ein mmx-Register geladen werden. In ein zweites Register müssen die Werte der Activation geladen werden. Anschließend können die erhaltenen Ergebnisse zusammenaddiert werden.
+Ein weiterer Vorteil ist die Tatsache, dass die Sigmoid-Funktion direkt innerhalb der Schleife angewandt werden kann. Bei der Implementierung, in der die Activation in der äußeren Schleife durchgegangen wird, muss die Sigmoid-Funktion in einer separaten Schleife auf alle Outputs angewandt werden.
 
-\section{Verwendung von SIMD auf x86 Architektur}
-
-Eine weitere Optimierung ergibt sich durch die Verwendung von SIMD (Single Instruction, Multiple Data) Operationen.  Neue CPUs von Intel und AMD besitzen spezielle Register, auf die SIMD Operationen angewandt werden können. 
-Die ersten SIMD Operationen auf der x86-Architektur von Intel wurden 1997 durch die Veröffentlichung von Prozessoren mit der Multi Media Extension (MMX) eingefügt. Die MMX beinhaltete 8 Register mit einer Größe von 64 Bit, die packed Integer Werte annehmen kann. Die Register hießen \texttt{mm0} bis \texttt{mm7}.
-Von packed ist die Rede, wenn ein Register größer als der Datentyp den es speichert. Anstelle den Wert des Datentyps in den niedrigsten Bits zu speichern, werden mehrere Werte des Datentyps hintereinander in das Register geschrieben, um so die ganze Breite des Registers auszunutzen.
-
-\includegraphics[width=\textwidth]{../images/Benz/avx_packed_scalar.png}
-
-Die Größe der Register wurde 1999 durch die Einführung von SSE, der Streaming SIMD Extension, verdoppelt. Der Namen der Register änderte sich zu \texttt{xmm0} bis \texttt{xmm7}. Die SSE erlaubte anfangs nur das packen von single precision floating points, was dem Datentyp Float entspricht. Die nächsten Jahre wurden mehrere Verbesserungen der SSE in neuere Generationen der CPUs verbaut, so unterstützten CPUs mit der SSE3 Hyper-Threading von SIMD Instruktionen.
-2011 wurde AVX, Advanced Vector Extension, in der neuen Mikroarchitektur Sandy Bridge eingebaut. Diese fügte zu den Registern xmm0 bis mm7 die Register ymm0 bis ymm7 hinzu. Die Register können zu 8 großen Registern zusammengefasst werden, sodass die Registergröße für eine SIMD Operation 256 Bit beträgt. Auf CPUs mit 64 Bit Adressierung wächst die Anzahl der Register auf 16. 2013 wurde ein erweiterter Instruktionssatz, genannt AVX2, in die damals aktuelle Haswell Architektur eingebaut.
-Die neuste Entwicklung im SIMD Umfeld nennt sich AVX-512. Dabei wird die Anzahl der Register nochmal verdoppelt auf 32 Register und es werden die neuen Register zmm0 bis zmm31 hinzugefügt. Diese haben eine Breite von 256 Bit. Werden die neuen Register mit den bereits aus der AVX vorhandenen Register zusammengefasst. Erhöht man ein Register mit einer Datenbreite von 512 Bit. Diese Version von AVX ist jedoch bis jetzt nur in sehr teuren CPUs die für Server gedacht sind enthalten.
-Ein Vergleich aller Register ist in der Grafik unterhalb zu erkennen.
-
-\includegraphics[width=\textwidth]{../images/Benz/simd_avx_sse_mmx.png}
-
-Bis jetzt wurde nur auf CPUs von Intel eingegangen, doch auch die CPUs von AMD sind in der x86 Architektur gefertigt. Das gute ist, dass moderne CPUs von AMD dieselbe SIMD Architektur verwenden und die Instruktionen somit die selben sind. Moderne AMD-Prozessoren besitzen die AVX2.
-Eine für diese Arbeit interessante Funktion der SIMD Instruktionen von neuen x86 Architekturen ist die Multiplikation von Float Zahlen. Durch AVX-512 lassen sich bei einer neuen CPUs bis zu 16 Floats in einem Register unterbringen und mit einer Instruktion multiplizieren. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Desweiteren wird ein Register benötigt, in dem das Ergebnis gespeichert werden soll. Durch Aufrufen des Befehls zur Multiplikation werden das n-te Float in Register a mit dem n-ten Float in Register b multipliziert und in ein Zielregister geschrieben.
-Da die neuste AVX-Version AVX-512 nur in wenigen CPUs integriert ist, wird in dieser Arbeit lediglich die ältere Version AVX2 verwendet.
-
-\includegraphics[width=\textwidth]{../images/Benz/avx.png}
-
-In der Grafik werden 8 Multiplikationen von Floats mit der Instruktion \texttt{\_mm256\_mul\_ps()} gleichzeitig ausgeführt. Die \texttt{256} gibt hierbei an, wie groß die Register sind. In diesem Fall sind die Register 256 Bit groß. Anschließend wird die Rechenart angegeben, hier eine Multiplikation (\texttt{mul}). Das \texttt{p} steht hierbei für "packed". Alternativ kann ein \texttt{s} für "single slot" angegeben werden, dann wird lediglich an der hintersten Position ein Wert des Datentyps erwartet und für die Multiplikation verwendet. An letzter Stelle steht ein \texttt{s}. Dieses steht für "single precision", was dem Datentyp Float entspricht. Bei einem \texttt{d} an dieser Stelle wird "pouble precission", was dem Datentyp Double entspricht, angenommen.
-
-Eine Übersicht aller SIMD-Instruktionen von Prozessoren mit aktueller x86-Architektur und findet sich unter \url{https://software.intel.com/sites/landingpage/IntrinsicsGuide}. Hier kann auch gesehen werden, mit welcher Erweiterung der SIMD Instruktionen ein Befehl einführt wurden ist.
-
-Durch die Verwendung von AVX lässt sich die Zeit zum Multiplizieren von mehreren Floats, im Vergleich zur standardmäßigen Multiplikation, prinzipiell bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 (Compilerflag \texttt{-O3}) for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. Durch das Compiler-Flag \texttt{-ftree-vectorizer-verbose=2} wird bei jeder Schleife ausgegeben, ob gcc den Code vektorisieren konnte und somit den Code mit SIMD-Instruktionen übersetzt hat oder nicht.
-
-Die Instruktionen können jedoch auch explizit aufgerufen werden, sodass nicht der Compiler die Entscheidung übernimmt, wo und wie optimiert werden soll, sondern dies der Programmierer selbst Entscheiden kann. 
-
-Für das Laden von Floats in ein AVX-Register gibt es mehrere Möglichkeiten. Um Werte an expliziter Stelle des Registers zu schreiben, gibt es den Befehl \texttt{\_mm256\_set\_ps(a8,a7,a6,a5,a4,a3,a2,a1)}. Der erste Parameter der Funktion wird hierbei an der letzten Stelle innerhalb des Registers geschrieben. Um einen Wert an alle Stellen des Registers zu schreiben, kann \texttt{\_mm256\_set1\_ps(a1)} verwendet werden. Mit \texttt{\_mm256\_load\_ps(addr)} kann eine Adresse übergeben werden und die folgenden Werte an dieser Adresse werden in das Register geschrieben. 
-Um das Ergebnis wieder als Floats anzusprechen, muss der Pointer zum Ergebnisregister als Pointer zu einem Float-Array gecastet werden.
-
-\begin{lstlisting}[language=c++, caption=Multiplikation mit AVX, captionpos=b, label=listing:avx, frame=single, linewidth=\textwidth, breaklines=true]
-float array[8]=[1,2,3,4,5,6,7,8];
-_m256 a = _mm256_set_ps(8,7,6,5,4,3,2,1);
-_m256 b = _mm256_load_ps(array);
-_m256 res = _mm256_mul_ps(a,b);
-float *f = (float*)&res;
-\end{lstlisting}
-An Adresse \texttt{f} stehen nun die ersten 8 Quadratzahlen, die alle mit der Instruktion \texttt{\_mm256\_mul\_ps} auf einmal errechnet wurden.
 \end{document}
