@@ -81,7 +81,63 @@ Weitere Funktionen zur Parallelisierung mit Hilfe von OpenMP wurden für diese A
 Für verschiedenen Bereiche, die unabhängig voneinander sind und parallel ausgeführt werden sollen, kann \texttt{\#pragma imp parallel section [Parameter]} verwendet werden.
 Für kritische Abschnitte gibt es \texttt{\#pragma omp critical [(name)]} und eine Barriere kann mit \texttt{\#pragma omp barrier} erzeugt werden.
 
-\section{Programmstruktur}
+\section{Verwendung von SIMD auf x86 Architektur}
+
+Eine weitere Optimierung ergibt sich durch die Verwendung von SIMD (Single Instruction, Multiple Data) Operationen.  Neue CPUs von Intel und AMD besitzen spezielle Register, auf die SIMD Operationen angewandt werden können. 
+Die ersten SIMD Operationen auf der x86-Architektur von Intel wurden 1997 durch die Veröffentlichung von Prozessoren mit der Multi Media Extension (MMX) eingefügt. Die MMX beinhaltete 8 Register mit einer Größe von 64 Bit, die packed Integer Werte annehmen kann. Die Register hießen \texttt{mm0} bis \texttt{mm7}.
+Von packed ist die Rede, wenn ein Register größer als der Datentyp den es speichert. Anstelle den Wert des Datentyps in den niedrigsten Bits zu speichern, werden mehrere Werte des Datentyps hintereinander in das Register geschrieben, um so die ganze Breite des Registers auszunutzen.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/avx_packed_scalar.png}
+	\caption{Anordnung von Floats und Double in einem AVX SIMD Register} 
+	\label{fig:avx_packed_scalar}
+\end{figure}
+
+Die Größe der Register wurde 1999 durch die Einführung von SSE, der Streaming SIMD Extension, verdoppelt. Der Namen der Register änderte sich zu \texttt{xmm0} bis \texttt{xmm7}. Die SSE erlaubte anfangs nur das packen von single precision floating points, was dem Datentyp Float entspricht. Die nächsten Jahre wurden mehrere Verbesserungen der SSE in neuere Generationen der CPUs verbaut, so unterstützten CPUs mit der SSE3 Hyper-Threading von SIMD Instruktionen.
+2011 wurde AVX, Advanced Vector Extension, in der neuen Mikroarchitektur Sandy Bridge eingebaut. Diese fügte zu den Registern xmm0 bis mm7 die Register ymm0 bis ymm7 hinzu. Die Register können zu 8 großen Registern zusammengefasst werden, sodass die Registergröße für eine SIMD Operation 256 Bit beträgt. Auf CPUs mit 64 Bit Adressierung wächst die Anzahl der Register auf 16. 2013 wurde ein erweiterter Instruktionssatz, genannt AVX2, in die damals aktuelle Haswell Architektur eingebaut.
+Die neuste Entwicklung im SIMD Umfeld nennt sich AVX-512. Dabei wird die Anzahl der Register nochmal verdoppelt auf 32 Register und es werden die neuen Register zmm0 bis zmm31 hinzugefügt. Diese haben eine Breite von 256 Bit. Werden die neuen Register mit den bereits aus der AVX vorhandenen Register zusammengefasst, erhöht sich die Datenbreite auf 512 Bit. Diese Version von AVX ist jedoch bis jetzt nur in sehr teuren CPUs, die für das Server Umfeld gedacht sind, enthalten (vgl. \cite{IntelAvx512}).
+Ein Vergleich aller Register ist in der Grafik unterhalb zu erkennen.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/simd_avx_sse_mmx.png}
+	\caption{Übersicht der Größe von SIMD Registern der x86 Architektur} 
+	\label{fig:simd_avx_sse_mmx}
+\end{figure}
+
+Eine für diese Arbeit interessante Funktion der SIMD Instruktionen von neuen x86 Architekturen ist die Multiplikation von Float Zahlen. Durch AVX-512 lassen sich bei einer neuen CPUs bis zu 16 Floats in einem Register unterbringen und mit einer Instruktion multiplizieren. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Desweiteren wird ein Register benötigt, in dem das Ergebnis gespeichert werden soll. Durch Aufrufen des Befehls zur Multiplikation werden das n-te Float in Register a mit dem n-ten Float in Register b multipliziert und in ein Zielregister geschrieben.
+Da die neuste AVX-Version AVX-512 nur in wenigen CPUs integriert ist, wird in dieser Arbeit lediglich die ältere Version AVX2 verwendet.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/avx.png}
+	\caption{Multiplikation von 8 Floats durch eine SIMD Anweisung} 
+	\label{fig:avx}
+\end{figure}
+
+In der Grafik werden 8 Multiplikationen von Floats mit der Instruktion \linebreak  \texttt{\_mm256\_mul\_ps()} gleichzeitig ausgeführt. Die \texttt{256} gibt hierbei an, wie groß die Register sind. In diesem Fall sind die Register 256 Bit groß. Anschließend wird die Rechenart angegeben, hier eine Multiplikation (\texttt{mul}). Das \texttt{p} steht hierbei für "packed". Alternativ kann ein \texttt{s} für "single slot" angegeben werden, dann wird lediglich an der hintersten Position ein Wert des Datentyps erwartet und für die Multiplikation verwendet. An letzter Stelle steht ein \texttt{s}. Dieses steht für "single precision", was dem Datentyp Float entspricht. Bei einem \texttt{d} an dieser Stelle wird "pouble precission", was dem Datentyp Double entspricht, angenommen.
+
+Eine Übersicht aller SIMD-Instruktionen von Prozessoren mit aktueller x86-Architektur und findet sich unter \url{https://software.intel.com/sites/landingpage/IntrinsicsGuide}. Hier kann auch gesehen werden, mit welcher Erweiterung der SIMD Instruktionen ein Befehl einführt wurden ist.
+
+Durch die Verwendung von AVX lässt sich die Zeit zum Multiplizieren von mehreren Floats, im Vergleich zur standardmäßigen Multiplikation, prinzipiell bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 (Compilerflag \texttt{-O3}) for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. Durch das Compiler-Flag \texttt{-ftree-vectorizer-verbose=2} wird bei jeder Schleife ausgegeben, ob gcc den Code vektorisieren konnte und somit den Code mit SIMD-Instruktionen übersetzt hat oder nicht.
+
+Die Instruktionen können jedoch auch explizit aufgerufen werden, sodass nicht der Compiler die Entscheidung übernimmt, wo und wie optimiert werden soll, sondern dies der Programmierer selbst Entscheiden kann. 
+
+Für das Laden von Floats in ein AVX-Register gibt es mehrere Möglichkeiten. Um Werte an expliziter Stelle des Registers zu schreiben, gibt es den Befehl \texttt{\_mm256\_set\_ps(a8,a7,a6,a5,a4,a3,a2,a1)}. Der erste Parameter der Funktion wird hierbei an der letzten Stelle innerhalb des Registers geschrieben. Um einen Wert an alle Stellen des Registers zu schreiben, kann \texttt{\_mm256\_set1\_ps(a1)} verwendet werden. Mit \texttt{\_mm256\_load\_ps(addr)} kann eine Adresse übergeben werden und die folgenden Werte an dieser Adresse werden in das Register geschrieben. 
+Um das Ergebnis wieder als Floats anzusprechen, muss der Pointer zum Ergebnisregister als Pointer zu einem Float-Array gecastet werden.
+
+\begin{lstlisting}[language=c++, caption=Multiplikation mit AVX, captionpos=b, label=listing:avx_multiplikation, frame=single, linewidth=\textwidth, breaklines=true]
+float array[8]=[1,2,3,4,5,6,7,8];
+_m256 a = _mm256_set_ps(8,7,6,5,4,3,2,1);
+_m256 b = _mm256_load_ps(array);
+_m256 res = _mm256_mul_ps(a,b);
+float *f = (float*)&res;
+\end{lstlisting}
+An Adresse \texttt{f} stehen nun die ersten 8 Quadratzahlen, die alle mit der Instruktion \texttt{\_mm256\_mul\_ps} auf einmal errechnet wurden.
+
+
+\section{Implementierung}
 
 Zur Implementierung des Convolutional Neural Networks auf einer x86-Architektur wurde die serielle Implementierung als Grundlage verwendet. Diese wurde genauer in Kapitel \nameref{chap:seriell} beschrieben. Zur optimierten Ausführung auf einer x86-CPU muss das Programm umgeschrieben werden. Folgende Methoden wurden zur Optimierung verwendet:
 \begin{itemize}
@@ -109,7 +165,7 @@ zeiger = tensor->getArray(z_pos, y_pos)[x_pos];
 \end{lstlisting}
 Die Klasse besitzt noch Funktionen, um die Größe des Tensors in die drei verschiedenen Dimensionen auszugeben. Dadurch kann mit drei verschachtelten For-Schleifen einfach durch alle Elemente iteriert werden.
 
-\subsection{Layertypen}
+\subsection{die verschiedenen Layertypen}
 Es gibt drei verschiedene Layertypen. Diese sind der Convolutional Layer, der Max Pooling Layer und der Fully Connected Layer. Um diese drei verschiedenen Layer in einer gemeinsamen Liste zu speichern, wurde ein Union mit dem Namen \texttt{Layer} erstellt. Dieses Union kann einen dieser 3 Datentypen annehmen. 
 Jede dieser Layer besitzt mehrere Zeiger auf Tensoren. Jeder Layer hat Zeiger auf Tensoren die die Activation, den Output und den Gradienten des Layers und des Layers davor darstellen. Mit Ausnahme des Max Pooling Layers gibt es noch Zeiger auf Gewichte und Biases, sowie Tensoren mit den Deltas der Gewichte und Biases. Der Zeiger auf den Output eines Layers hat den selben Wert wie der Zeiger des Inputs des folgenden Layers. Somit weden die Tensoren von mehreren Layern verwendet, einmal als Input und einmal als Output. Das Gleiche gilt für die Gradienten. Die Tensoren sind so aufgebaut, dass die x und y Dimension ein Muster darstellt und mit der z-Position die verschiedenen Muster ausgewählt werden.
 Alle Layer beinhalten die Methoden \texttt{generate()}, \texttt{forward()}, \texttt{backward()} und \texttt{fix\_weights()}.
@@ -172,7 +228,7 @@ Bei der seriellen Implementierung werden die benötigten Elemente der Activation
 \end{figure}
 
 
-Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies kann sich vermeiden lassen, indem man die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt an die Zieladresse schreibt. 
+Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies lässt sich vermeiden, indem die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt an die Zieladresse geschrieben werden. 
 
 Es wurde sich für eine Methode entschieden, bei der zuerst der Output-Tensor auf 0 gesetzt wird. Anschließend wird jedes Element vom Activation-Tensor durchgegangen. Je nachdem, wo sich das Element im Activation-Tensor befindet, gibt es verschiedene Elemente der Gewichts-Matritzen, mit denen es multipliziert werden muss. Beispielweise muss das erste Element links oben nur mit dem Element links oben des Faltungskerns multipliziert werden, währenddessen Elemente in der Mitte des Input-Tensors mit allen Elementen des Faltungskerns multipliziert werden müssen. Die Ergebnisse müssen je nach Element des Faltungskerns an verschiedenen Stellen im Output geschrieben werden.
 Die entsprechenden Elemente des Faltungkerns werden mit zwei if-Bedingungen ermittelt. Bei diesen if-Bedingungen wird der Start- und der Endindex für beide Dimensionen eines Faltungskerns durch die Position des Elements in der Activation ermittelt. Anschließend werden diese Werte des Faltungskerns mit dem einen Element des Inputs multipliziert und die Ergebnisse an die richtige Stelle des Output-Tensors hinzugefügt.
@@ -229,8 +285,7 @@ for(int z_pos=0; z_pos < output->getZ(); z_pos++){
    for(int y_pos = 0; y_pos < output->getY(); y_pos++){
       for(int x_pos = 0; x_pos < output->getX();x_pos++){
       
-         //TODO: Zeile noch nicht korrekt
-         for(int w_z_pos=0;w_z_pos < weight->getZ();w_z_pos+=activation->getZ()){
+         for(int w_z_pos=z_pos;w_z_pos < weight->getZ();w_z_pos+=activation->getZ()){
          
             for(int w_y_pos = 0; w_y_pos <= weight->getY() ; w_y_pos+){
                for(int x_pos = 0; x_pos <= weight->getX() ; w_x_pos++){
@@ -243,60 +298,7 @@ for(int z_pos=0; z_pos < output->getZ(); z_pos++){
 }
 \end{lstlisting}
 
+Der Vorteil dieser Methode, im Vergleich zur vorherigen Methode, ist die einfache Umsetzung von SIMD Instruktionen in diesem Code. Werden AVX-Register verwendet, können immer 8 der Gewichte in ein mmx-Register geladen werden. In ein zweites Register müssen die Werte der Activation geladen werden. Anschließend können die erhaltenen Ergebnisse zusammenaddiert werden.
+Ein weiterer Vorteil ist die Tatsache, dass die Sigmoid-Funktion direkt innerhalb der Schleife angewandt werden kann. Bei der Implementierung, in der die Activation in der äußeren Schleife durchgegangen wird, muss die Sigmoid-Funktion in einer separaten Schleife auf alle Outputs angewandt werden.
 
-\section{Verwendung von SIMD auf x86 Architektur}
-
-Eine weitere Optimierung ergibt sich durch die Verwendung von SIMD (Single Instruction, Multiple Data) Operationen.  Neue CPUs von Intel und AMD besitzen spezielle Register, auf die SIMD Operationen angewandt werden können. 
-Die ersten SIMD Operationen auf der x86-Architektur von Intel wurden 1997 durch die Veröffentlichung von Prozessoren mit der Multi Media Extension (MMX) eingefügt. Die MMX beinhaltete 8 Register mit einer Größe von 64 Bit, die packed Integer Werte annehmen kann. Die Register hießen \texttt{mm0} bis \texttt{mm7}.
-Von packed ist die Rede, wenn ein Register größer als der Datentyp den es speichert. Anstelle den Wert des Datentyps in den niedrigsten Bits zu speichern, werden mehrere Werte des Datentyps hintereinander in das Register geschrieben, um so die ganze Breite des Registers auszunutzen.
-
-\begin{figure}[!htbp]
-	\centering
-	\includegraphics[width=\textwidth]{../images/Benz/avx_packed_scalar.png}
-	\caption{Anordnung von Floats und Double in einem AVX SIMD Register} 
-	\label{fig:avx_packed_scalar}
-\end{figure}
-
-Die Größe der Register wurde 1999 durch die Einführung von SSE, der Streaming SIMD Extension, verdoppelt. Der Namen der Register änderte sich zu \texttt{xmm0} bis \texttt{xmm7}. Die SSE erlaubte anfangs nur das packen von single precision floating points, was dem Datentyp Float entspricht. Die nächsten Jahre wurden mehrere Verbesserungen der SSE in neuere Generationen der CPUs verbaut, so unterstützten CPUs mit der SSE3 Hyper-Threading von SIMD Instruktionen.
-2011 wurde AVX, Advanced Vector Extension, in der neuen Mikroarchitektur Sandy Bridge eingebaut. Diese fügte zu den Registern xmm0 bis mm7 die Register ymm0 bis ymm7 hinzu. Die Register können zu 8 großen Registern zusammengefasst werden, sodass die Registergröße für eine SIMD Operation 256 Bit beträgt. Auf CPUs mit 64 Bit Adressierung wächst die Anzahl der Register auf 16. 2013 wurde ein erweiterter Instruktionssatz, genannt AVX2, in die damals aktuelle Haswell Architektur eingebaut.
-Die neuste Entwicklung im SIMD Umfeld nennt sich AVX-512. Dabei wird die Anzahl der Register nochmal verdoppelt auf 32 Register und es werden die neuen Register zmm0 bis zmm31 hinzugefügt. Diese haben eine Breite von 256 Bit. Werden die neuen Register mit den bereits aus der AVX vorhandenen Register zusammengefasst. Erhöht man ein Register mit einer Datenbreite von 512 Bit. Diese Version von AVX ist jedoch bis jetzt nur in sehr teuren CPUs die für Server gedacht sind enthalten.
-Ein Vergleich aller Register ist in der Grafik unterhalb zu erkennen.
-
-\begin{figure}[!htbp]
-	\centering
-	\includegraphics[width=\textwidth]{../images/Benz/simd_avx_sse_mmx.png}
-	\caption{Übersicht der Größe von SIMD Registern der x86 Architektur} 
-	\label{fig:simd_avx_sse_mmx}
-\end{figure}
-
-Bis jetzt wurde nur auf CPUs von Intel eingegangen, doch auch die CPUs von AMD sind in der x86 Architektur gefertigt. Das gute ist, dass moderne CPUs von AMD dieselbe SIMD Architektur verwenden und die Instruktionen somit die selben sind. Moderne AMD-Prozessoren besitzen die AVX2.
-Eine für diese Arbeit interessante Funktion der SIMD Instruktionen von neuen x86 Architekturen ist die Multiplikation von Float Zahlen. Durch AVX-512 lassen sich bei einer neuen CPUs bis zu 16 Floats in einem Register unterbringen und mit einer Instruktion multiplizieren. Für die Multiplikation werden 2 Register benötigt, die mit den zu multiplizierenden Floats initialisiert sind. Desweiteren wird ein Register benötigt, in dem das Ergebnis gespeichert werden soll. Durch Aufrufen des Befehls zur Multiplikation werden das n-te Float in Register a mit dem n-ten Float in Register b multipliziert und in ein Zielregister geschrieben.
-Da die neuste AVX-Version AVX-512 nur in wenigen CPUs integriert ist, wird in dieser Arbeit lediglich die ältere Version AVX2 verwendet.
-
-\begin{figure}[!htbp]
-	\centering
-	\includegraphics[width=\textwidth]{../images/Benz/avx.png}
-	\caption{Multiplikation von 8 Floats durch eine SIMD Anweisung} 
-	\label{fig:avx}
-\end{figure}
-
-In der Grafik werden 8 Multiplikationen von Floats mit der Instruktion \linebreak  \texttt{\_mm256\_mul\_ps()} gleichzeitig ausgeführt. Die \texttt{256} gibt hierbei an, wie groß die Register sind. In diesem Fall sind die Register 256 Bit groß. Anschließend wird die Rechenart angegeben, hier eine Multiplikation (\texttt{mul}). Das \texttt{p} steht hierbei für "packed". Alternativ kann ein \texttt{s} für "single slot" angegeben werden, dann wird lediglich an der hintersten Position ein Wert des Datentyps erwartet und für die Multiplikation verwendet. An letzter Stelle steht ein \texttt{s}. Dieses steht für "single precision", was dem Datentyp Float entspricht. Bei einem \texttt{d} an dieser Stelle wird "pouble precission", was dem Datentyp Double entspricht, angenommen.
-
-Eine Übersicht aller SIMD-Instruktionen von Prozessoren mit aktueller x86-Architektur und findet sich unter \url{https://software.intel.com/sites/landingpage/IntrinsicsGuide}. Hier kann auch gesehen werden, mit welcher Erweiterung der SIMD Instruktionen ein Befehl einführt wurden ist.
-
-Durch die Verwendung von AVX lässt sich die Zeit zum Multiplizieren von mehreren Floats, im Vergleich zur standardmäßigen Multiplikation, prinzipiell bis zu 16 mal verkürzen. Der gcc-Compiler versucht auf Optimierungsstufe 3 (Compilerflag \texttt{-O3}) for-Schleifen automatisch zu vektorisieren. Deswegen ist es nicht unbedingt vonnöten, die AVX-Register mühsam selbst zu verwenden. Durch das Compiler-Flag \texttt{-ftree-vectorizer-verbose=2} wird bei jeder Schleife ausgegeben, ob gcc den Code vektorisieren konnte und somit den Code mit SIMD-Instruktionen übersetzt hat oder nicht.
-
-Die Instruktionen können jedoch auch explizit aufgerufen werden, sodass nicht der Compiler die Entscheidung übernimmt, wo und wie optimiert werden soll, sondern dies der Programmierer selbst Entscheiden kann. 
-
-Für das Laden von Floats in ein AVX-Register gibt es mehrere Möglichkeiten. Um Werte an expliziter Stelle des Registers zu schreiben, gibt es den Befehl \texttt{\_mm256\_set\_ps(a8,a7,a6,a5,a4,a3,a2,a1)}. Der erste Parameter der Funktion wird hierbei an der letzten Stelle innerhalb des Registers geschrieben. Um einen Wert an alle Stellen des Registers zu schreiben, kann \texttt{\_mm256\_set1\_ps(a1)} verwendet werden. Mit \texttt{\_mm256\_load\_ps(addr)} kann eine Adresse übergeben werden und die folgenden Werte an dieser Adresse werden in das Register geschrieben. 
-Um das Ergebnis wieder als Floats anzusprechen, muss der Pointer zum Ergebnisregister als Pointer zu einem Float-Array gecastet werden.
-
-\begin{lstlisting}[language=c++, caption=Multiplikation mit AVX, captionpos=b, label=listing:avx_multiplikation, frame=single, linewidth=\textwidth, breaklines=true]
-float array[8]=[1,2,3,4,5,6,7,8];
-_m256 a = _mm256_set_ps(8,7,6,5,4,3,2,1);
-_m256 b = _mm256_load_ps(array);
-_m256 res = _mm256_mul_ps(a,b);
-float *f = (float*)&res;
-\end{lstlisting}
-An Adresse \texttt{f} stehen nun die ersten 8 Quadratzahlen, die alle mit der Instruktion \texttt{\_mm256\_mul\_ps} auf einmal errechnet wurden.
 \end{document}
