@@ -1,13 +1,13 @@
 \documentclass[../main.tex]{subfiles}
-
-\lstMakeShortInline[columns=fixed, basicstyle=\bfseries]|
+%, backgroundcolor=\color{mygray}
+\lstMakeShortInline[columns=fullflexible, basicstyle=\ttfamily\small, breaklines=true]|
 
 \begin{document}
 Im Gegensatz zu General Purpose CPUs lassen sich mithilfe von Coprozessoren deutlich höhere Parallelisierungsgrade erzielen. Gegenüber GPUs haben sie den Vorteil, dass die Kerne eines Coprozessors einen größeren Befehlssatz verfügen, mit dem sie nicht nur Befehlssequenzen, sondern auch bedingte Sprünge ausführen können. Mit GPUs lässt sich dagegen eine weitaus höhere Parallelität erreichen. Mit der Max Pooling-Operation ist die Fähigkeit von Coprozessoren, auch Code mit Verzweigungen parallel auszuführen, von Nutzen. 
 
 In dieser Arbeit soll auch eine Implementierung des CNNs erstellt werden, die Berechnungen an Coprozessoren. Ein direkter Vergleich dieser Implementierung mit Tensorflow hat nur bedingte Aussagekraft, da Tensorflow laut der offiziellen Dokumentation nur für den Einsatz auf CPUs, GPUs und TPUs optimiert ist. Coprozessoren werden von Tensorflow dagegen nicht explizit unterstützt. (vgl. \cite{aboutTensorflow}) Ein Vergleich zwischen dieser Implementierung und den anderen beiden in dieser Arbeit behandelten optimierten Implementierungen lässt allerdings Rückschlüsse darauf ziehen, wie der Performancegewinn unter Zuhilfenahme eines Coprozessors einzuordnen ist. 
 
-Die DHBW Stuttgart besitzt einen Server, der mit einer General Purpose CPU(Intel Xeon E5-2650L) und zwei Coprozessoren(Intel Xeon Phi) ausgestattet ist. Beim Xeon Phi handelt es sich um eine PCIe-Erweiterungskarte, auf der eine spezielle CPU mit 60 Kernen und einer Taktrate von 1\,GHz, sowie ein DDR5-Arbeitsspeicher mit einer Größe von 8\,GB verbaut sind. Für diese Arbeit wurde den Studenten freundlicherweise ein SSH-Zugang zur Verfügung gestellt. Die in diesem Kapitel betrachtete Implementierung soll auf dem genannten Server getestet und dementsprechend auch für dessen Prozessoren optimiert werden. 
+Die DHBW Stuttgart besitzt einen Server, der mit einer General Purpose CPU (Intel Xeon E5-2650L) und zwei Coprozessoren (Intel Xeon Phi) ausgestattet ist. Beim Xeon Phi handelt es sich um eine PCIe-Erweiterungskarte, auf der eine spezielle CPU mit 60 Kernen und einer Taktrate von 1\,GHz, sowie ein DDR5-Arbeitsspeicher mit einer Größe von 8\,GB verbaut sind. Für diese Arbeit wurde den Studenten freundlicherweise ein SSH-Zugang zur Verfügung gestellt. Die in diesem Kapitel betrachtete Implementierung soll auf dem genannten Server getestet und dementsprechend auch für dessen Prozessoren optimiert werden. 
 
 \section{Intel Xeon Phi Coprozessor}
 Beim Intel Xeon Phi handelt es sich um einen Coprozessor, der in Form einer PCIe-Erweiterungskarte (siehe Abbildung \ref{pic:xeonphicard}) mit dem Hostsystem verbunden werden kann und numerische Operationen durch Parallelisierung über bis zu 72 Rechenkerne, sowie durch Vektorisierung unterstützt. Zusätzlich zum Prozessor selbst ist auf der Erweiterungskarte ein DDR5-Arbeitsspeicher verbaut. Bei Bedarf kann der Xeon Phi ein eigenes Betriebssystem ausführen und damit Programme komplett unabhängig vom Hostsystem abarbeiten. (vgl. \cite{intelxeonphiprocessors})
@@ -311,15 +311,37 @@ Beide Unterklassen implementieren mehrere in der Oberklasse definierte get-Acces
 	\caption {Unterklassen von WeightShape}
 	\label{pic:cd_Netdesc_weightshapes} 
 \end{figure} 
-Auch die Klasse |WeightShape| ist abstrakt und besitzt zwei instanziierbare Unterklassen. 
+Wie in Abbildung \ref{pic:cd_Netdesc_weightshapes} zu sehen ist, besitzt auch die abstrakte Klasse |WeightShape| zwei instanziierbare Unterklassen. Die Unterklasse |StdWeightShape| kommt für die Layertypen |FullyConnectedLayer| und |ConvolutionalLayer| zum Einsatz. Für diese Layertypen werden Gewichte in Form einer Gewichtsmatrix und eines Biasvektors gespeichert. In Objekten des Typs |StdWeightShape| werden die Dimensionen der Matrix und des Vektors, sowie deren Gesamtgröße gespeichert. Eine weitere Unterklasse ist |MaxPoolingWeightShape|, diese wird für den Schichttyp |MaxPoolingLayer| verwendet. Max Pooling an sich ist zwar eine nicht gewichtsbehaftete Operation, daher werden im für Gewichte vorgesehenen Feld auch keine Gewichte gespeichert. Allerdings müssen für jede Ausgabe des Max Poolings mehrere Eingaben verglichen werden, die im Speicher nicht direkt hintereinander liegen. Aus diesem Grund besitzt die Netzwerkstruktur des C-Programms zwei zusätzliches Array aus Integer-Werten: Im ersten Feld werden Offsets festgehalten, mit denen die Positionen der zu vergleichenden Eingabeaktivierungen bestimmt werden können. Nach der Bestimmung des Maximums wird dessen Positionen als Offset im zweiten Array gespeichert. So kann während der Backpropagation der Fehler des Ausgangs an den dafür verantwortlichen Eingang weitergereicht werden, ohne dass die Eingaben erneut verglichen werden müssen. 
 
 \subsection{Layertypen}
+Wie aus Abbildung \ref{pic:cd_Netdesc_layers} hervorgeht, wird in dieser Implementierung zwischen drei Layertypen unterschieden: |FullyConnectedLayer|, |ConvolutionalLayer| und |MaxPoolingLayer|. Alle drei Unterklassen benötigen eine andere Kombination von |WeightShape|- und |ActivationShape|-Subtypen. In den Abbildungen \ref{pic:cd_Netdesc_fullyconnected}, \ref{pic:cd_Netdesc_conv} und \ref{pic:cd_Netdesc_maxpooling} zeigen die Beziehungen der drei Layertypen zu den dazugehörigen |ActivationShape|- bzw. |WeightShape|-Unterklassen. 
+\begin{figure}
+	\centering 
+	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_layers.jpg} 
+	\caption {Unterklassen von Layer}
+	\label{pic:cd_Netdesc_layers} 
+\end{figure} 
+\begin{figure}
+	\centering 
+	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_fullyconnected.jpg} 
+	\caption {Layertyp Fully Connected Layer}
+	\label{pic:cd_Netdesc_fullyconnected} 
+\end{figure} 
+\begin{figure}
+	\centering 
+	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_conv.jpg} 
+	\caption {Convolutional Layer}
+	\label{pic:cd_Netdesc_conv} 
+\end{figure} 
+\begin{figure}
+	\centering 
+	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_maxpool.jpg} 
+	\caption {Max Pooling Layer}
+	\label{pic:cd_Netdesc_maxpooling} 
+\end{figure} 
 
-\subsection{Netzwerkkonfiguration}
-
-
-
-\section{Programm zur Netzwerksimulation}
+\section{Programm zum Netzwerktraining}
+Das eigentliche Programm zum Training des Netzwerks wird in C geschrieben. Für einen großen Teil der Berechnungen werden die entsprechenden Funktionen der MKL-Bibliothek verwendet. Nebenläufig ausführbarer Anwendungscode wird mithilfe von OpenMP parallelisiert. Vom Netzwerkmodell oder der Konfiguration abhängiger Code wird mithilfe von cog generiert. Dieser Abschnitt befasst sich mit dem eigentlichen C-Programm, dessen Moduleinteilung und den Arbeitsweisen der wichtigsten Module. 
 
 \subsection{Moduleinteilung}
 
