@@ -297,7 +297,7 @@ Nachdem alle Schichten hinzugefügt wurden, muss die Methode |generate| aufgeruf
 \begin{figure}
 	\centering 
 	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_actshapes.jpg} 
-	\caption {Unterklassen von |ActivationShape|}
+	\caption {Unterklassen von ActivationShape}
 	\label{pic:cd_Netdesc_actshapes} 
 \end{figure} 
 Wie im Abschnitt \ref{xeonphi:convnpool} bereits vorweggenommen wurde, erzeugt ein Convolutional Layer eine Ausgabe, deren Größe und Reihenfolge sich von denen der anderen Schichttypen unterscheidet. Diese Besonderheit muss im Netzwerkmodell berücksichtigt werden. Aus diesem Grund besitzt die abstrakte Klasse |ActivationShape| zwei instanziierbare Unterklassen. (siehe Abbildung \ref{pic:cd_Netdesc_actshapes}) Die Unterklasse |StdActivationShape| beschreibt einen Aktivierungstensor des Formats BYXF, wie er von den meisten Layertypen als Eingang verwendet und für den Ausgang erzeugt wird. |ConvActivationShape| beschreibt ein spezielles Format, das nur an der Schnittstelle von einem Convolutional Layer zu einem Pooling Layer verwendet werden kann. 
@@ -308,7 +308,7 @@ Beide Unterklassen implementieren mehrere in der Oberklasse definierte get-Acces
 \begin{figure}
 	\centering 
 	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_weightshapes.jpg} 
-	\caption {Unterklassen von |WeightShape|}
+	\caption {Unterklassen von WeightShape}
 	\label{pic:cd_Netdesc_weightshapes} 
 \end{figure} 
 Auch die Klasse |WeightShape| ist abstrakt und besitzt zwei instanziierbare Unterklassen. 
