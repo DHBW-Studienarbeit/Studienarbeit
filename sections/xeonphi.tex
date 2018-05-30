@@ -272,7 +272,7 @@ Der Build des ausführbaren Programms erfolgt in mehreren Schritten:
 \item{Ausführung: } Beim Build wird die ausführbare Datei |build/program| erzeugt. Diese Datei beinhaltet das CNN-Trainingsprogramm und kann mit |./build/program| gestartet werden. Alternativ kann mit |make execute| das Programm übersetzt und nach dem erfolgreichen Build automatisch gestartet werden. Die Ausgaben des Programms selbst, sowie eines Tools zur Messung der Ausführungsdauer werden in die Datei |report.txt| geschrieben. 
 \end{description}
 
-\section{Skript zur Netzwerkbeschreibung}
+\section{Skript zur Netzwerkbeschreibung} \label{xeonphi:netdesk}
 Wie in Abschnitt \ref{xeonphi:codegen} bereits erläutert wurde, wird in dieser Implementierung zusätzlich zum eigentlichen C-Programm ein Pythonskript erstellt, das zur Modellierung des Netzwerkes dient. In diesem Abschnitt wird dieses Skript näher beschrieben. 
 
 \subsection{Klasseneinteilung}
@@ -296,7 +296,7 @@ Nachdem alle Schichten hinzugefügt wurden, muss die Methode |generate| aufgeruf
 \subsection{Schnittstellen zwischen Schichten}
 \begin{figure}
 	\centering 
-	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_actshapes.jpg} 
+	\includegraphics[width=0.5\textwidth]{../images/Schmidt/cd_netdesc_actshapes.jpg} 
 	\caption {Unterklassen von ActivationShape}
 	\label{pic:cd_Netdesc_actshapes} 
 \end{figure} 
@@ -304,10 +304,10 @@ Wie im Abschnitt \ref{xeonphi:convnpool} bereits vorweggenommen wurde, erzeugt e
 
 Beide Unterklassen implementieren mehrere in der Oberklasse definierte get-Accessoren. Damit lassen sich die Dimensionen des Tensors in die Richtungen B, Y, X und F, sowie der tatsächliche Speicherbedarf für alle enthaltenen Werte abfragen. Außerdem sind get-Accessoren enthalten, mit denen sich die Speicherposition eines Aktivierungswertes innerhalb des Tensors anhand seiner Koordinaten ermitteln lässt. 
 
-\subsection{Gewichtsspeicherung}
+\subsection{Gewichtsspeicherung} \label{xeonphi:netdesc_weights}
 \begin{figure}
 	\centering 
-	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_weightshapes.jpg} 
+	\includegraphics[width=0.5\textwidth]{../images/Schmidt/cd_netdesc_weightshapes.jpg} 
 	\caption {Unterklassen von WeightShape}
 	\label{pic:cd_Netdesc_weightshapes} 
 \end{figure} 
@@ -317,25 +317,25 @@ Wie in Abbildung \ref{pic:cd_Netdesc_weightshapes} zu sehen ist, besitzt auch di
 Wie aus Abbildung \ref{pic:cd_Netdesc_layers} hervorgeht, wird in dieser Implementierung zwischen drei Layertypen unterschieden: |FullyConnectedLayer|, |ConvolutionalLayer| und |MaxPoolingLayer|. Alle drei Unterklassen benötigen eine andere Kombination von |WeightShape|- und |ActivationShape|-Subtypen. In den Abbildungen \ref{pic:cd_Netdesc_fullyconnected}, \ref{pic:cd_Netdesc_conv} und \ref{pic:cd_Netdesc_maxpooling} zeigen die Beziehungen der drei Layertypen zu den dazugehörigen |ActivationShape|- bzw. |WeightShape|-Unterklassen. 
 \begin{figure}
 	\centering 
-	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_layers.jpg} 
+	\includegraphics[width=0.7\textwidth]{../images/Schmidt/cd_netdesc_layers.jpg} 
 	\caption {Unterklassen von Layer}
 	\label{pic:cd_Netdesc_layers} 
 \end{figure} 
 \begin{figure}
 	\centering 
-	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_fullyconnected.jpg} 
+	\includegraphics[width=0.8\textwidth]{../images/Schmidt/cd_netdesc_fullyconnected.jpg} 
 	\caption {Layertyp Fully Connected Layer}
 	\label{pic:cd_Netdesc_fullyconnected} 
 \end{figure} 
 \begin{figure}
 	\centering 
-	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_conv.jpg} 
+	\includegraphics[width=0.8\textwidth]{../images/Schmidt/cd_netdesc_conv.jpg} 
 	\caption {Convolutional Layer}
 	\label{pic:cd_Netdesc_conv} 
 \end{figure} 
 \begin{figure}
 	\centering 
-	\includegraphics[width=\textwidth]{../images/Schmidt/cd_netdesc_maxpool.jpg} 
+	\includegraphics[width=0.8\textwidth]{../images/Schmidt/cd_netdesc_maxpool.jpg} 
 	\caption {Max Pooling Layer}
 	\label{pic:cd_Netdesc_maxpooling} 
 \end{figure} 
@@ -344,23 +344,52 @@ Wie aus Abbildung \ref{pic:cd_Netdesc_layers} hervorgeht, wird in dieser Impleme
 Das eigentliche Programm zum Training des Netzwerks wird in C geschrieben. Für einen großen Teil der Berechnungen werden die entsprechenden Funktionen der MKL-Bibliothek verwendet. Nebenläufig ausführbarer Anwendungscode wird mithilfe von OpenMP parallelisiert. Vom Netzwerkmodell oder der Konfiguration abhängiger Code wird mithilfe von cog generiert. Dieser Abschnitt befasst sich mit dem eigentlichen C-Programm, dessen Moduleinteilung und den Arbeitsweisen der wichtigsten Module. 
 
 \subsection{Moduleinteilung}
+Das Diagramm in Abbildung \ref{pic:netexec_structure} dient zur Veranschaulichung der Moduleinteilung und der Abhängigkeiten innerhalb des Programms. 
+\begin{figure}
+	\centering 
+	\includegraphics[width=0.8\textwidth]{../images/Schmidt/netexec_structure.jpg} 
+	\caption {Moduleinteilung des Trainingsprogramms für CNNs}
+	\label{pic:netexec_structure} 
+\end{figure} 
 
-\subsection{Netzwerkmodell}
+\subsection{Programmablauf}
+In der obersten Schicht ist die |main|-Funktion zu finden. Diese Funktion ist für die Initialisierung der |DataSupplier| und des Netzwerks verantwortlich und steuert den Ablauf des Trainings. Das Training an sich ist ein iterativer Prozess, in dem das Netzwerk abwechselnd mit einer konfigurierbaren Anzahl von Trainingsdatensätzen trainiert und mit einer ebenfalls konfigurierbaren Anzahl von Testdatensätzen getestet wird. 
 
-\subsection{Netzwerkinitialisierung}
+Für das Training und die Tests sind die Module |TrainSession| und |TestSession| verantwortlich. Diese Module definieren jeweils eine Methode, die den Ablauf zum Trainieren bzw. Testen des Netzwerks steuern. Beide Methoden benötigen jeweils einen Pointer auf eine Struktur des Typs |Network_t|, einen Pointer auf eine Struktur des Typs |DataSupply_t| und einen Integer mit der Anzahl der Minibatches, für die das Training / der Test durchgeführt werden soll. Für eine |TrainSession| muss darüber hinaus die zu verwendende Lernrate übergeben werden; für eine |TestSession| muss zusätzlich ein Pointer auf eine Struktur des Typs |TestResult_t| übergeben werden, in die die Testergebnisse geschrieben werden. In beiden Sessiontypen werden zunächst Pointer auf neue Eingabedaten von |DataSupply_t| angefordert, anscließend wird das Netzwerk mit diesen Daten vorwärts durchlaufen. Bei einer |TestSession| werden anschließend die durchschnittlichen Kosten pro Bild, sowie die Erkennungsgenauigkeit ermittelt und in die dafür vorgesehene Struktur geschrieben. Bei einer |TrainSession| wird auf die Ermittlung dieser Daten verzichtet, das sie für das eigentliche Training nicht erforderlich sind. Stattdessen wird die Ableitung der Kosten nach den Aktivierungen der letzten Netzwerkschicht (die Fehler der Aktivierungen) berechnet und anschließend auf Basis dieser Werte eine Backpropagation und eine Gewichtsanpassung mithilfe des Gradient Descent Algorithmus und der übergebenen Lernrate durchgeführt. 
 
-\subsection{Hilfsfunktionen}
+Die Einsparung der Kosten- und Genauigkeitsberechnung während des Trainings hat zur Folge, dass die zeitliche Entwicklung dieser Werte während des Trainings nicht ohne Weiteres mit der Vorlage aus Tensorflow verglichen werden kann. Die strikte Trennung von Training und Test hat zur Folge, dass durch eine entsprechende Konfiguration ein reines Training unter vollständigem Vericht auf die Ermittlung dieser Daten mit höherer Effizienz durchgeführt werden kann. Für den Fall, dass der Verlauf dieser Daten während des Trainings verfolgt werden soll, ist der Test mit den dafür vorgesehenen Testdaten, die noch nicht zuvor zum Trainieren des Netzwerks verwendet wurden, etwas aussagekräftiger. Abhängig davon, wie häufig diese Daten ermittelt werden müssen und welche Aussagekraft erforderlich ist, können die Umfänge der |TrainSession| und |TestSession| unabhängig voneinander verändert werden. 
 
-\subsection{Verhaltensbeschreibung der Layer}
+\subsection{Datenversorgung}
+Das Modul |DataSupply| definiert den Strukturtyp |DataSupplier_t|, sowie einige Funktionen zum initialisieren und iterativen Durchlaufen der darin gespeicherten Ein- und Ausgabedaten. Zur Speicherung dieser Daten werden während der Initialisierung zwei zusammenhängende Speicherbereiche reserviert. Anschließend werden die Ein- und Ausgabedaten aus einem Satz von CSV-Dateien gelesen, die von der seriellen Implementierung übernommen werden, und getrennt in die beiden Speicherbereiche geschrieben. Zur der Vorwärtsberechnung des Netzwerks reicht es aus, wenn der erste Layer als Eingabe einen Pointer verwendet, der in den entsprechenden Speicherbereich zeigt. Die Umstellung auf eine neue Minibatch erfolgt ebenfalls ohne großen Aufwand durch eine Aktualisierung des Pointers. Auch die Ausgabedaten können über einen Pointer ermittelt werden. 
 
-\subsection{Datenfluss beim Fully Connected Layer}
+\subsection{Netzwerk}
+Zur Repräsentation eines Netzwerks und dessen Zustand wird eine Struktur mit dem Namen |NeuronalNetwork_t| definiert. Diese Struktur beinhaltet Pointer auf gemeinsam genutzte Speicherbereiche. Dazu gehören Felder für die Aktivierungen und Gewichte, deren Fehler, ein Bereich für temporär genutzte Zwischenergebnisse, ein mit dem Wert \(1.0\) gefülltes Array, das für einige Rechenoperationen als Eingabe verwendet wird, und zwei Interger-Arrays zur Unterstützung der Poling-Operation. Darüber hinaus müssen die einzelnen Schichten des Netzwerks in dessen Struktur repräsentiert sein. Für jeden Layertyp existiert eine eigene Strukturdefinition, Instanzen dieser Strukturen müssen für die verwendeten Schichten in der Strukturdefinition von |NeuronalNetwork_t| angelegt werden. Der Code zum Anlegen dieser Instanzen wird unter Verwendung des Netzwerkmodells (Abschnitt \ref{xeonphi:netdesk}) noch vor dem Übersetzen generiert. 
 
-\subsection{Organisation der Faltungsoperation}
+Bei der Initialisierung des Netzwerks werden zunächst die in der Struktur |NeuronalNetwork_t| definierten Pointer initialisiert, indem je ein ausreichend großer Speicherbereich reserviert und die Anfangsadresse in den entsprechenden Pointer geschrieben wird. Anschließend erfolgt die Initialisierung der Gewichte mithilfe eines Pseudo Random Number Generators (PRGN) aus der MKL-Bibliothek. Darüber hinaus müssen auch alle in der Netzwerkstruktur enthaltenen Netzwerkschichten bzw. deren Strukturinstanzen initialisiert werden. Sowohl der Code zur Speicherreservierung, (Speicherbedarf ist abhängig vom Netzwerkmodell) als auch der Code zur Initialisierung der einzelnen Schichten (Durchlaufen der Layerliste, typabhängige Initialisierung) werden generiert. 
 
-\subsection{Implementierung des Poolings}
+Einer der in |NeuronalNetwork_t| definierten Speicherbereiche soll vorberechnete Informationen enthalten, die für die Poolingoperation verwendet werden. Wie bereits im Abschnitt \ref{xeonphi:netdesc_weights} vorweggenommen wurde, handelt es sich dabei um ein Feld, in dem jedem Ausgang eines Poolinglayers alle dafür relevanten Eingangswerte zugeordnet werden. Die Berechnung dieser Zuordung wird ebenfalls während der Initialisierung vorgenommen, der Code dazu wird generiert. Dabei handelt es sich um eine sehr aufwändige Operation, die allerdings nur einmalig durchgeführt werden muss und mittels OpenMP-Pragmas nebenläufig ausgeführt werden kann. Eine Alternative wäre, die vollständige Zuordnung bereits im Zuge der Codegenerierung zu berechnen und als globales Array von Konstanten im Programmcode zu hinterlegen. Abhängig vom Netzwerkmodell und der Batchsize kann dies aber zu Problemen führen: In der Netzwerkkonfiguration des mit dieser Arbeit abgegebenen Quelltextes hätte das Array eine Größe von mehr als einer Million Elementen. Allein Generierung der dafür nötigen Arraydeklaration mithilfe eines seriellen Python-Skripts, das noch zur Laufzeit interpretiert werden muss, würde länger dauern als das eigentliche Training. (in einer früheren Version getestet; auf dem Versuchsrechner dauerte die Generierung länger als 30 Minuten bei einer Batchsize von 10) Zudem begrenzen einige Compiler die Dateigröße des zu übersetzenden Codes. Selbst wenn der Compiler auch derart große Dateien übersetzen kann, wird erneut viel Zeit zum parsen des Quelltextes benötigt. 
 
-\subsection{Programmfluss}
+Nach Abschluss der Initialisierung wird die verwendete Instanz von |NeuronalNetwork_t| nicht mehr geändert. Der veränderliche Teil des Netzwerks, nämlich die Gewichte und Aktivierungen, sowie temporäre Daten, befindet sich innerhalb der Arrays, auf die von der Netzwerkstruktur aus verwiesen wird. 
 
+Neben der Initialisierungsfunktion definiert das Modul |Network| Funktionen zur Vorwärtsberechnung und Backpropagation, zur Berechnung der Genauigkeit und der Kostenfunktion, sowie zur Gewichtsanpassung mittels Gradient Descent. Diese Funktionen sind relativ kurz, allerdings wird für jede dieser Funktionen generierter Code benötigt. Bei der Forward- und Backpropagation müssen die dafür vorgesehenen Funktionen der jeweiligen Schichten nach der Reihenfolge ihres Auftretens im Netzwerkmodell aufgerufen werden. Bei den Funktionen, die die Ergebnisse der Vorwärtsberechnung verarbeiten, muss die modellabhängige Größe des Ausgabevektors bekannt sein. Und für die Gewichtsanpassung muss die Anzahl aller Gewichte im Netzwerk bekannt sein. 
+
+\subsection{Layertypen}
+Zwar sind die verschiedenen Layertypen in dieser Implementierung voneinander unabhängig und besitzen keine gemeinsame Basisklasse, trotzdem weisen sie gewisse Ähnlichkeiten zueinander auf. Zu jedem Layertyp wird eine Struktur definiert, diese enthält Informationen über dessen Eigenschaften, sowie Pointer zu den Startadressen der Ein- und Ausgabebereichs und Gewichte, sowie deren Fehler. 
+
+Außerdem definieren alle Layertypen je vier Funktionen, davon zwei zur Forward- und zwei zur Backpropagation, von denen wiederrum je eine für den Sonderfall vorgesehen ist, dass es sich um den ersten Layer im Netzwerk handelt und die Eingabe von einer als Parameter übergebenen Adresse gelesen werden muss. 
+
+Die Parametersignaturen dieser Funktionen sind für alle Layertypen identisch; dieser Umstand erleichtert die Codegenerierung im aufrufenden Code. 
+
+\subsection{Fully Connected Layer}
+
+
+\subsection{Convolutional Layer}
+
+
+\subsection{Max Pooling Layer}
+
+
+\subsection{Mathematische Funktionen}
 
 
 \section{Anpassung der Netzwerkkonfiguration}
