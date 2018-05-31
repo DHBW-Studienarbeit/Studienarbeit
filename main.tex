@@ -20,6 +20,7 @@ BCOR6mm,					% Bindekorrektur, die den Seitenspiegel um 6mm nach rechts verschie
 \usepackage{amsfonts}			% Mathematische Fonts
 \usepackage{amssymb}			% Mathematische Symbole
 
+\usepackage{multirow}			%erlaubt das erstellen von komplizierteren Tabellen
 \usepackage{mathtools}
 
 \usepackage{textcomp} 			% zum Einsatz von Eurozeichen u. a. Symbolen
@@ -192,7 +193,7 @@ Ort \hspace{1cm} Datum \hspace{4cm} Unterschrift\\
 \clearpage
 
 \addtocontents{toc}{~\hfill J.Benz, F. Schmidt\par}
-\chapter{Vergleich der unterschiedlichen Implementierungen}
+\chapter{Vergleich der unterschiedlichen Implementierungen} \label{chap:vergleich}
 \subfile{sections/vergleich}
 \clearpage
 

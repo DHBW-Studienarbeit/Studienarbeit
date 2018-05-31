@@ -9,27 +9,23 @@ Eine weitere Optimierungsmöglichkeit ergibt sich aus der Tatsache,  dass CPUs h
 
 Zur Entwicklung des Programms wurde Eclipse CDT verwendet und als Compiler gcc, ein weit verbreiteter Compiler mit einer großen Open Source Comunity. Dieser kann mit sehr vielen Flags aufgerufen werden, um den Compiliervorgang optimal einzustellen.
 
-Ein optimiertes Neuronales Netzwerk auf der General Purpose x86 CPU wurde im Rahmen dieser Arbeit nicht erfolgreich Implementiert. Alle Funktionen eines Neuronalen Netzwerkes wurde zwar implementiert und bei einer geringen Menge von Trainingsdaten werden diese nach vielen Iterationen auch richtig erkannt. das Erkennen von neuen Daten ist jedoch selbst nach einer langen Zeitspanne zum Trainieren nicht möglich und die Iterationen zum Trainieren des Netzwerkes sind um ein vielfaches höher als von anderen Implementierungen des selben Netzes. Dabei muss es sich um einen Fehler in der Implementierung handeln, der bis zum Ende der Zeit für die Studienarbeit nicht gefunden werden konnte. 
+Ein optimiertes Neuronales Netzwerk auf der General Purpose x86 CPU wurde im Rahmen dieser Arbeit nicht erfolgreich Implementiert. Alle Funktionen eines Neuronalen Netzwerkes wurde zwar implementiert und bei einer geringen Menge von Trainingsdaten werden diese nach vielen Iterationen auch richtig erkannt. Das Erkennen von neuen Daten ist jedoch selbst nach einer langen Zeitspanne zum Trainieren nicht möglich und die Iterationen zum Trainieren des Netzwerkes sind um ein vielfaches höher als von anderen Implementierungen des selben Netzes. Dabei muss es sich um einen Fehler in der Implementierung handeln, der bis zum Ende der Zeit für die Studienarbeit nicht gefunden werden konnte.
+Die Suche nach dem Fehler war sehr schwer, da alle trainierten Werte des Neuronalen Netzwerk stimmen könnten und anhand der Werte nicht auf den Fehler geschlossen werden kann, was im Grundprinzip eines neuronalen Netzwerkes liegt. Die Zahlenwerte sind für einen Menschen nichtssagend und könnten alle plausibel sein.
+Durch die langwierige Fehlersuche wurde der Code nicht ausreichend für die Zielhardware optimiert, sodass der Code nicht performant läuft.
 
 \section{OpenMP (Open Multi Procesing)}
 
 Aktuelle CPUs, ob im Arbeitsrechner, Laptop, Tablet oder Smartphone, besitzen inzwischen mehrere CPU-Kerne. Dies liegt daran, dass in den letzten Jahren der Mehrgewinn neuer CPUs nicht mehr durch eine erhöhten Taktfrequenz, wie in den Jahrzehnten zuvor, sondern durch eine parallele Verarbeitung von Daten erzielt wurde. Um das volle Potenzial dieser CPUs auszunutzen ist es zwingend notwendig, Programme zu parallelisieren, sodass Programmabschnitte auf mehreren Kernen gleichzeitig ausgeführt werden können.
-„Unter der Parallelisierung eines Programms versteht man, dass mehrere Teile einer Aufgabe gleichzeitig nebeneinander ausgeführt werden, um so die Gesamtaufgabe schneller als bei strikt serieller Verarbeitung zu beenden. \cite{articleOpenMP}"
+„Unter der Parallelisierung eines Programms versteht man, dass mehrere Teile einer Aufgabe gleichzeitig nebeneinander ausgeführt werden, um so die Gesamtaufgabe schneller als bei strikt serieller Verarbeitung zu beenden." \cite{articleOpenMP}
 
 Mit der Programmierschnittstelle OpenMP ist es relativ einfach Programme, mithilfe von Direktiven die in den Programmcode eingefügt werden, parallel ablaufen zu lassen. OpenMP ist hierbei für die Programmiersprachen C, C++ und Fortran verfügbar.
 
-\subsection{Programmiermodell}
-
-Die nebenläufige Abarbeitung von Programmteilen wird bei OpenMP durch das Fork-Join-Prinzip erzielt. Dabei erfolgt an einer bestimmten Stelle im Programmcode ein sogenannter Fork. An dieser Punkt erzeugt der Thread, der den vorherigen Programmcode ausgeführt hat, neue Threads, die den danach folgenden Code parallel ausführen. Der Thread, der die anderen Threads erzeugt hat, wird Master-Thread genannt. Am Ende des parallelen Bereichs geschieht ein Join. Bei einem Join werden alle Treads synchronisiert und beendet. Lediglich der Master-Thread bleibt erhalten und führt das weitere Programm seriell aus. Zum Ausführen des Joins, müssen alle Threads die Ausführung des Codes beendet haben.
-
-OpenMP erlaubt es, einen Fork auch innerhalb eines parallelen Programmabschnittes zu tätigen. Der außerhalb liegende Join muss dann auf alle innere Joins warten, also bis alle innerhalb des parallelen Codes erzeugten Threads beendet wurden.
-
 \subsection{Prozesse und Threads}
 
-"Als Prozess bezeichnet man ein Programm, das gerade vom Betriebssystem ausgeführt wird." \cite{articleOpenMP} Ein Prozess wird auch als aktive Instanz eines Programmcodes bezeichnet. Systeme, die mehrere Prozesse scheinbar gleichzeitig ausführen können, werden als Multitasking Systemen bezeichnet. Die multitasking Fähigkeit wird oft nur vorgespielt, stattdessen werden verschiedene Prozesse nacheinander in kurzen Intervallen ausgeführt. Diese Aufgabe übernimmt der Prozess Scheduler. \par
-Es gibt verschiedene scheduling Strategien, mit denen bestimmt wird, wie lange und wann ein Prozess auf der CPU ausgeführt wird. Zu den bekanntesten gehört "First-Come First-Serve", "Shortest Job First" und Round Robin. Bei "First-Come First-Serve" werden alle Prozesse hintereinander in eine Warteschlange gestellt und müssen darauf warten, bis alle vorherigen Prozesse ausgeführt wurden. Bei der Strategie "Shortest Job First" werden Prozesse, die nur kurze Ausführungszeiten benötigen, zuerst ausgeführt. Dies führt zu einer verringerten durchschnittlichen Wartezeit, Prozesse die eine lange Ausführungszeit haben brauchen aber sehr lange um ausgeführt zu werden.
-Beim "Round Robin" Verfahren werden lange Prozesse in mehrere Teilstücke aufgeteilt, die dann nacheinander ausgeführt werden. Dadurch werden Prozesse, die viel Ausführungszeit benötigen, schneller abgearbeitet als bei "Shortest Job First" und Prozesse mit geringer Ausführungsdauer müssen nicht so lange warten wie bei "First-Come First-Serve". 
-Neue Betriebssysteme arbeiten mit wesentlich komplexeren Scheduling-Strategien, in denen Prozesse unterschiedliche Prioritäten bekommen und sich unterschiedlich "nett" gegenüber dem Prozessor verhalten können. \cite{scriptProzessScheduling}
+"Als Prozess bezeichnet man ein Programm, das gerade vom Betriebssystem ausgeführt wird." \cite{articleOpenMP} Ein Prozess wird auch als aktive Instanz eines Programmcodes bezeichnet. Systeme, die mehrere Prozesse scheinbar gleichzeitig ausführen können, werden als Multitasking Systemen bezeichnet. Eine tatsächliche parallele Ausführung ist jedoch oft nicht möglich, stattdessen werden verschiedene Prozesse nacheinander in kurzen Intervallen ausgeführt. Der Prozess Scheduler bestimmt hierbei, welcher Prozess wann ausgeführt wird. \par
+Es gibt verschiedene Scheduling-Strategienum um zu bestimmen, wie lange und wann ein Prozess auf der CPU ausgeführt wird. Zu den bekanntesten gehört "First-Come First-Serve", "Shortest Job First" und Round Robin. Bei "First-Come First-Serve" werden alle Prozesse hintereinander in eine Warteschlange gestellt und müssen darauf warten, bis alle vorherigen Prozesse ausgeführt wurden.  Bei der Strategie "Shortest Job First" werden Prozesse, die nur kurze Ausführungszeiten benötigen, zuerst ausgeführt. Dies führt zu einer verringerten durchschnittlichen Wartezeit, Prozesse die eine lange Ausführungszeit haben brauchen aber sehr lange um ausgeführt zu werden.
+Beim "Round Robin" Verfahren werden lange Prozesse in mehrere Teilstücke aufgeteilt. Nacheinander werden von jedem Prozess ein Teilstück abgearbeitet. Dadurch werden Prozesse, die viel Ausführungszeit benötigen, schneller abgearbeitet als bei "Shortest Job First" und Prozesse mit geringer Ausführungsdauer müssen nicht so lange warten wie bei "First-Come First-Serve". 
+Neue Betriebssysteme arbeiten mit komplexeren Scheduling-Strategien, in denen Prozesse unterschiedliche Prioritäten bekommen und sich unterschiedlich "nett" gegenüber dem Prozessor verhalten können. \cite{scriptProzessScheduling}
 
 Ein Prozess besteht aus folgenden Komponenten:
 \begin{itemize}
@@ -41,11 +37,17 @@ Ein Prozess besteht aus folgenden Komponenten:
 	\item dem Heap mit den dynamisch angelegte Variablen
 \end{itemize} \cite{articleOpenMP}
 
-Wird der Prozess, der zurzeit bearbeitet wird, gewechselt, müssen alle zu diesem Prozess gehörenden Daten gesichtert werden. Der Bereich, in dem die Daten der einzelnen Prozesse liegen, wird Prozesskontrollblock genannt.
+Wird der Prozess, der zurzeit bearbeitet wird, gewechselt, müssen alle zu diesem Prozess gehörenden Daten gesichert werden. Der Bereich, in dem die Daten der einzelnen Prozesse liegen, wird Prozesskontrollblock genannt.
 
 "In modernen Betriebssystemen kann ein Prozess über mehrere Ausführungsstränge oder Threads verfügen. Ein Thread kann als „Light-Version“ eines Prozesses betrachtet werden." \cite{articleOpenMP}
 Mehrere Thread können sich einen Datenspeicherbereich, den Heap und andere Elemente eines Prozesses teilen. Dadurch kann der Wechsel zwischen Threads viel schneller erfolgen, als der Wechsel zwischen Prozessen. Des weiteren können Threads, durch den gemeinsamen Speicherbereich, auch tatsächlich parallel, auf mehreren CPU Kernen, bearbeitet werden.
 OpenMP ermöglicht die einfache Nutzung dieser Technik. Es muss sich mit OpenMP nicht um die richtige Initialisierung oder das Erstellen und Beenden von Threads Gedanken gemacht werden. Stattdessen werden im Programmcode durch Compilerdirektiven einfach zu verstehende Anweisungen gegeben und dem Rest OpemMP überlassen. \cite{articleOpenMP}
+
+\subsection{Programmiermodell}
+
+Die nebenläufige Abarbeitung von Programmteilen wird bei OpenMP durch das Fork-Join-Prinzip erzielt. Dabei erfolgt an einer bestimmten Stelle im Programmcode ein sogenannter Fork. An dieser Punkt erzeugt der Thread, der den vorherigen Programmcode ausgeführt hat, neue Threads, die den danach folgenden Code parallel ausführen. Der Thread, der die anderen Threads erzeugt hat, wird Master-Thread genannt. Am Ende des parallelen Bereichs geschieht ein Join. Bei einem Join werden alle Treads synchronisiert und beendet. Lediglich der Master-Thread bleibt erhalten und führt das weitere Programm seriell aus. Zum Ausführen des Joins, müssen alle Threads die Ausführung des Codes beendet haben.
+
+OpenMP erlaubt es, einen Fork auch innerhalb eines parallelen Programmabschnittes zu tätigen. Der außerhalb liegende Join muss dann auf alle innere Joins warten, also bis alle innerhalb des parallelen Codes erzeugten Threads beendet wurden.
 
 \subsection{OpenMP-Direktiven}
 
@@ -71,7 +73,7 @@ Eine weitere Möglichkeit der Deklaration von Variablen ergibt sich durch die Re
 Das Default-Verhalten lässt sich jedoch auch ändern, dafür gibt es die Datenzugriffsklausel \texttt{default(zugriffsverhalten)}. Hier kann auch der Wert \texttt{none} angegeben werden. Dann gibt es für jede Variable, für die nicht explizit das Zugriffsverhalten angegeben wurde, beim compilieren einen Fehler. Dies kann für Testzwecke in den Code eingebaut werden, um sich für jede Variable explizit Gedanken zu machen.
 Variablen können nur in einer Datenzugriffsklausel vorkommen, also nicht gleichzeitig privat und shared deklariert sein.
 
-\subsection{Parallelisierung}
+\subsection{Parallele Abarbeitung}
 
 Parallele Abschnitte des Programms beginnen immer mit der Direktiven \texttt{\#pragma omp parallel}. Der sich innerhalb der geschwungenen Klammern befindende Code wird dann vom Compiler, wenn er OpenMP unterstützt, als parallelen Code übersetzt. Der Auszuführende Code ist hierbei, ohne Angabe weiterer Direktiven, in jedem Thread derselbe. 
 
@@ -167,7 +169,7 @@ float *f = (float*)&res;
 An Adresse \texttt{f} stehen nun die ersten 8 Quadratzahlen, die alle mit der Instruktion \texttt{\_mm256\_mul\_ps} auf einmal errechnet wurden.
 
 
-\section{Implementierung}
+\section{Implementierung des Convolutional Neural Network}
 
 Zur Implementierung des Convolutional Neural Networks auf einer x86-Architektur wurde die serielle Implementierung als Grundlage verwendet. Diese wurde genauer in Kapitel \nameref{chap:seriell} beschrieben. Zur optimierten Ausführung auf einer x86-CPU muss das Programm umgeschrieben werden. Folgende Methoden wurden zur Optimierung verwendet:
 \begin{itemize}
@@ -232,7 +234,17 @@ Die z-Dimension des Outputs ist durch die Anzahl der Features gegeben. Der Tenso
 
 Die Klasse \texttt{InputLayer}, die es noch in der seriellen Implementierung gab, gibt es nicht mehr. Stattdessen zeigt der Pointer des ersten Layers auf einen Tensor, der direkt das Bild enthält, welches im Netzwerk analysiert werden soll.
 
-\subsection{der Convolutional Layers}
+\subsection{Funktion der verschiedenen Tensoren}
+Die Grafik \ref{fig:conv_forward_backward} zeigt das Zusammenspiel und die Funktionsweise der verschiedenen Tensors bei Verwendung der forward()- und backward()-Funktionen. Die Abkürzung "w" steht hierbei für "weight", "b" für "bias", "w\_g" für "weight\_grads" und "b\_g" für "bias\_grads". In einem Layer sind immer Zeiger zu den Gewichten und den Biases, die sich in der Grafik vor dem Layer befinden, enthalten. In forward-Richtung werden die Gewichts- und die Bias-Tensors für die Berechnung der Activation des nächsten Layers verwendet. Im letzten Layer wird der Fehler berechnet und in den Tensor "output\_grad" geschrieben. In backward-Richtung werden nun die Fehler zurückgerechnet und dabei in jedem Layer die Tensoren "weight\_grads" und "bias\_grads" geschrieben. Die Werte für die Tensoren werden auf den sich schon darin befindenden Wert addiert.
+Durch Aufruf der fix()-Funktion werden die Gewichte und Biases der Layer durch die Werte Tensoren "weight\_grads" und "bias\_grads" angepasst. Dies ist in der Grafik als orangefarbenen Pfeil zu erkennen.
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=\textwidth]{../images/Benz/forward_backward.png} %Grafik Forward Backward
+	\caption{Zusammenspiel zwischen forward()- und backward()-Methode} 
+	\label{fig:conv_forward_backward}
+\end{figure}
+
+\subsection{Implementierung des Convolutional Layers}
 
 Die größten Optimierungsmöglichkeiten ergeben sich im Convolutional Layer, da dort die Anzahl der Multiplikationen am Höchsten ist. Um den Layer zu optimieren, muss zuerst die Funktionsweise aus der seriellen Implementierung analysiert werden.
 
@@ -247,6 +259,8 @@ Bei der seriellen Implementierung werden die benötigten Elemente der Activation
 
 
 Bei dieser Vorgehensweise sind sehr viele neue Allokationen des Hauptspeichers nötig, da viel Speicherplatz kurzfristig benötigt wird. Dies lässt sich vermeiden, indem die Multiplikationen geschickt nacheinander ausführt und das Ergebnis direkt an die Zieladresse geschrieben werden. 
+
+\subsubsection{Durchgehen der Activation}
 
 Es wurde sich für eine Methode entschieden, bei der zuerst der Output-Tensor auf 0 gesetzt wird. Anschließend wird jedes Element vom Activation-Tensor durchgegangen. Je nachdem, wo sich das Element im Activation-Tensor befindet, gibt es verschiedene Elemente der Gewichts-Matritzen, mit denen es multipliziert werden muss. Beispielweise muss das erste Element links oben nur mit dem Element links oben des Faltungskerns multipliziert werden, währenddessen Elemente in der Mitte des Input-Tensors mit allen Elementen des Faltungskerns multipliziert werden müssen. Die Ergebnisse müssen je nach Element des Faltungskerns an verschiedenen Stellen im Output geschrieben werden.
 Die entsprechenden Elemente des Faltungkerns werden mit zwei if-Bedingungen ermittelt. Bei diesen if-Bedingungen wird der Start- und der Endindex für beide Dimensionen eines Faltungskerns durch die Position des Elements in der Activation ermittelt. Anschließend werden diese Werte des Faltungskerns mit dem einen Element des Inputs multipliziert und die Ergebnisse an die richtige Stelle des Output-Tensors hinzugefügt.
@@ -263,6 +277,7 @@ o_{x-x\_pos,y-y\_pos,z\_pos/z} += a_{x,y,z}*w_{x\_pos,y\_pos,z\_pos}
 Den Programmcode ist in \ref{listing:conv_activation} zu sehen.
 
 \begin{lstlisting}[language=c++, caption=Convolution: Activation durchgehen, captionpos=b, label=listing:conv_activation, frame=single, linewidth=\textwidth, breaklines=true]
+#pragma omp for firstprivate(output, activation, weight) lastprivate(output, activation, weight)
 for(int pre_z_pos=0; pre_z_pos < activation->getZ(); pre_z_pos++){
    for(int pre_y_pos = 0; pre_y_pos < activation->getY(); pre_y_pos++){
       for(int pre_x_pos = 0; pre_x_pos < activation->getX();pre_x_pos++){
@@ -291,7 +306,7 @@ for(int pre_z_pos=0; pre_z_pos < activation->getZ(); pre_z_pos++){
 
 Durch diese Methode kann der Output-Tensor und die Gewichte im Cache liegen, die Speicherzugriffe erfolgen somit sehr schnell. Da kein neuer Speicher allokiert wird, muss nicht darauf gewartet werden, bis der vergleichsweise sehr langsame Arbeitsspeicher den Speicherplatz freigibt und die Daten in den Cache geladen werden können. 
 
-\subsubsection{Alternative Implementierung des Convolutional Layers}
+\subsubsection{Durchgehen des Outputs}
 
 Der Convolutional Layer kann auf mehrere Arten implementiert werden. Immer müssen mehrere For-Schleifen ineinander die Faltung mit dem Faltungskern ausführen, dazu werden die einzelnen Zählvariablen als Index des Input und des Outputs verwendet. Es kann jedoch entschieden werden, welche Schleife für welchen Indes verwendet wird.
 
@@ -299,18 +314,21 @@ Die wohl einfachste Art der Implementierung ist die, dass die äußeren For-Schl
 
 Eine Implementierung des Convolutional Layers nach dieser Methode ist unterhalb zu erkennen.
 \begin{lstlisting}[language=c++, caption=Convolution: Output durchgehen, captionpos=b, label=listing:conv_output, frame=single, linewidth=\textwidth, breaklines=true]
-for(int z_pos=0; z_pos < output->getZ(); z_pos++){
-   for(int y_pos = 0; y_pos < output->getY(); y_pos++){
-      for(int x_pos = 0; x_pos < output->getX();x_pos++){
-      
-         for(int w_z_pos=z_pos;w_z_pos < weight->getZ();w_z_pos+=activation->getZ()){
+
+#pragma omp parallel for firstprivate(output, activation, weight) lastprivate(output, activation, weight)
+for ( int z_pos =0; z_pos < output->getZ() ; z_pos++){
+   for ( int y_pos = 0 ; y_pos < output->getY() ; y_pos++){
+      for ( int x_pos = 0 ; x_pos < output->getX() ; x_pos++){
          
-            for(int w_y_pos = 0; w_y_pos <= weight->getY() ; w_y_pos+){
-               for(int x_pos = 0; x_pos <= weight->getX() ; w_x_pos++){
-                  output->getArray(z_pos, y_pos)[x_pos] += activation->getArray(z_pos,y_pos+w_y_pos)[x_pos+w_x_pos] * weight->getArray(w_z_pos,w_y_rec)[w_x_rec];
+         int z_stop = (z_pos+1)*activation->getZ();
+         for ( int w_z_pos=z_pos*activation->getZ() ; w_z_pos < z_stop; w_z_pos++){
+            for ( int w_y_pos = 0; w_y_pos < weight->getY (); w_y_pos++){
+               for ( int w_x_pos = 0 ; w_x_pos < weight->getX(); w_x_pos++){
+                  output->getArray(z_pos, y_pos)[x_pos] += activation->getArray(z_pos%activation->getZ(), y_pos+w_y_pos)[x_pos+w_x_pos] * weight->getArray(w_z_pos, w_y_pos )[w_x_pos] ;
                }
             }
          }
+      
       }
    }
 }
@@ -349,5 +367,34 @@ for(int w_y_pos = 0; w_y_pos < weight->getY(); w_y_pos++){
    }
 }
 \end{lstlisting}
+
+\subsubsection{Vergleich der verschiedenen Implementierungen}
+
+Die verschiedenen Implementierungen des Convolutional Layers wurden in einem Testprogramm auf ihre Laufzeiten analysiert. Dabei wurde eine Activation mit der Größe von 24*24*32 gewählt und ein Output von 20*20*64. Die Faltungskerne haben jeweils 25 Elemente, es wird immer eine 5*5-Umgebung nach Mustern abgesucht.
+Als Testhardware wurde ein PC mit einer Intel Core i5-5310 CPU verwendet. Diese besitzt lediglich 2 CPU Kerne.
+In einem Durchlauf des Programms werden 10 Faltungsoperationen mit jeder der drei Implementierungen ausgeführt. Die Implementierungen sind einmal das Durchgehen des Outputs mit AVX, einmal das Durchgehen des Outputs ohne AVX und die Implementierung, bei der der Input durchgegangen wird. Die Ausführungszeiten werden in Sekunden gemessen. 
+Als Optimierungsstufe wurde die Optimierungsstufe 0 und die Optimierungsstufe 3 im Compiler gcc verwendet. Dies einmal mit, und einmal ohne Verwendung von OpenMP.
+Gemessen wurde mit der Funktion \texttt{clock()}. Diese Funktion gibt eine Zahl zurück, die sich bei  jedem Tick auf dem Prozessor erhöht. Durch die Differenz der Zahlen vor- und nach der Ausführung eines Codes, lässt sich die Anzahl der Ticks zur Ausführung des Codes ermitteln. Die gemessene Differenz wurde durch eine Million geteilt um kleinere Zahlen zu erhalten.
+
+\begin{tabular}{|p{3.5cm}|p{3cm}|p{3cm}|p{3cm}|}
+\hline
+Optimierungsstufe & Output AVX & Output & Input \\
+\hline
+O0 & 10,27 \linebreak 13,26 \linebreak 7,63 & 7,79 \linebreak 11,44 \linebreak 5,6 & 8,51 \linebreak 11,45 \linebreak 6,13 \\
+\hline
+O3 & 4,44 \linebreak 4,22 \linebreak 4,87 & 3,64 \linebreak 3,32 \linebreak 4,3 & 3,49 \linebreak 3,15 \linebreak 3,82 \\
+\hline
+O0, OpemMP & 9,95 \linebreak 10,29 \linebreak 9,2 & 7,38 \linebreak 8,29 \linebreak 7,04 & 7,85 \linebreak 8,15 \linebreak 7,6 \\
+\hline
+O3, OpenMP & 4,77 \linebreak 4,31 \linebreak 5,73 & 4,1 \linebreak 3,52 \linebreak 4,98 & 4,22 \linebreak 3,73 \linebreak 5,332 \\
+\hline
+\end{tabular}
+
+Da die Laufzeiten teilweise sehr unterschiedlich ausfallen, wurden drei Durchläufe des Programms pro Optimierungsstufe getätigt.
+Es ist zu erkennen, dass die Verwendung von OpenMP aus Optimierungsstufe 0 nur zu einer sehr kleinen Geschwindigkeitsverbesserung führt. Auf Optimierungsstufe 3 verschlechtert sich das Ergebnis durch parallele Ausführung sogar. Dies liegt klar an der CPU der Testhardware, die lediglich 2 Kerne besitzt. Das Erstellen von neuen Threads ist zu aufwändig im Vergleich zum erhaltenen Performance-Gewinn. Um einen Leistungsgewinn durch Multithreading zu erzielen, muss die CPU mehrere Kerne besitzen oder das Programm besser parallelisiert werden. 
+Eine weitere, interessante Erkenntnis aus diesem Vergleich ist, dass die Implementierung mit expliziten AVX-Aufrufen langsamer ist als die Implementierung ohne AVX. Der Compiler schafft es, den Code besser zu optimieren als mein Versuch, die Intrinsiks zu verwenden. Die Implementierung, bei der der Input durchgegangen wird auf Optimierungsstufe 3, ist die schnellste Implementierung. Dies liegt höchstwahrscheinlich an der Ausnutzung der Cache-Hierarchie. Der Input kann bei dieser Implementierung immer im Speicher gelassen werden und wird eins nach dem anderen Durchgegangen.
+
+Den Code tatsächlich zu optimieren, wurde im Rahmen der Studienarbeit nicht geschafft. Für das Suchen eines Fehlers beim Zurückrechnen der Biases und Gewichte wurde zu viel Zeit investiert. Die Zeit für das tatsächliche Optimieren mit SIMD und Multithreading viel deswegen zu gering aus, um den Zeitrahmen der Studienarbeit nicht komplett zu sprengen.
+Trotzdem wurden Messungen mit dem Programm ausgeführt, die im letzten Kapitel dieser Arbeit, Kapitel \ref{chap:vergleich}, beschrieben sind.
 
 \end{document}
