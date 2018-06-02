@@ -64,7 +64,7 @@ Die Mengen \(M_x\) und \(N_y\) beinhalten dabei jeweils die x- und y-Koordinaten
 \subsection{Max Pooling} \label{maxpool_forward}
 Beim Max Pooling werden die betrachteten Aktivierungen des Eingangs miteinander verglichen und der größte Wert wird unverändert im Ausgang übernommen. Auch hier wird auf die erneute Anwendung einer Aktivierungsfunktion verzichtet. Formal lässt sich Max Pooling wie folgt beschreiben: 
 \begin{equation} \label{eq:maxpooling}
-output_{x, y} = max( {input_{m,n} | m \in M_x; n \in N_y})
+output_{x, y} = max( \{input_{m,n} | m \in M_x; n \in N_y\})
 \end{equation}
 Die obige Gleichung wirkt zwar auf menschliche Betrachter einfach, allerdings ist sie maschinell nicht ohne Schwierigkeiten zu lösen. Der Grund dafür ist, dass zur Berechnung der max-Operation Verzweigungen nötig sind. Bei den meisten modernen CPU-Archtikturen werden diese deutlich langsamer ausgeführt als rein sequentielle Operationen. 
 
@@ -98,22 +98,22 @@ Wird die Eingabe also in gleich große Cluster eingeteilt, so lässt sich der Fe
 Wie zuvor beim Average Pooling gilt auch hier die Gleichung \ref{eq:pooling_backprop_std}. Außerdem wird wieder angenommen, dass sich die Cluster nicht überschneiden, womit auch Gleichung \ref{eq:pooling_backprop_simplified} ohne Änderungen auf Max Pooling übertragen werden kann. Die Ableitung \(\frac{\partial y_j}{\partial x_i}\) muss allerdings neu bestimmt werden, da sich die beiden Verfahren bei der Vorwärtsberechnung unterscheiden. 
 Die Vorwärtsberechnung für Max Pooling ist bereits durch Gleichung \ref{eq:maxpooling} formalisiert. Zunächst wird diese Gleichung unter Verwendung der Variablen \(x_i\) und \(y_j\) neu formuliert. Damit ergibt sich: 
 \begin{equation}
-y_j = max( {x_k | k \in (M_j \times N_j)})
+y_j = max( \{x_k | k \in (M_j \times N_j)\})
 \end{equation}
 Der Index k steht in dieser Gleichung für alle möglichen Positionen von Eingaben in dem für die Ausgangsaktivierung \(y_j\) relevanten Cluster. Wie sich erkennen lässt, hat nur der größte betrachtete Eingang einen Einfluss auf das Ergebnis. Dies macht eine Fallunterscheidung bei der Bestimmung der Ableitung \(\frac{\partial y_j}{\partial x_i}\) notwendig: 
 \begin{equation}
    \frac{\partial y_j}{\partial x_i} = 
    \begin{cases}
-     1 \text{für } x_i = max( {x_k | k \in (M_j \times N_j)}) \\
-     0 \text{sonst}
+     1 & \text{für } x_i = max( \{x_k | k \in (M_j \times N_j)\}) \\
+     0 & \text{sonst}
    \end{cases}
 \end{equation}
 Dies lässt sich in die zuvor bestimmte Gleichung \ref{eq:pooling_backprop_simplified} einsetzen. Dadurch ergibt sich die finale Gleichung zur Backpropagation beim Max Pooling: 
 \begin{equation} \label{eq:pooling_backprop_max_final}
    \frac{\partial C}{\partial x_i} = 
    \begin{cases}
-     \frac{\partial C}{\partial y_j} \text{für } x_i = max( {x_k | k \in (M_j \times N_j)}) \\
-     0 \text{sonst}
+     \frac{\partial C}{\partial y_j} & \text{für } x_i = max( \{x_k | k \in (M_j \times N_j)\}) \\
+     0 & \text{sonst}
    \end{cases}
 \end{equation}
 Wie zu erkennen ist, wird hier das Ergebnis der Vorwärtsoperation erneut verwendet. Die Position des Maximums kann daher zwischengespeichert werden, um den Aufwand für eine erneute Berechnung einzusparen. 
@@ -131,13 +131,13 @@ Zusammenfassend lässt sich daher feststellen, dass die Berechnung von Average P
 \subsection{Qualität}
 Die Qualität des Ergebnisses einer Pooling-Operation hängt nicht nur von der Art der Operation selbst, sondern auch von der Art und Aufgabe des Modells, sowie den Eingabedaten ab. Tensorflow verwendet in seinen Beispielen zur Ziffernerkennung Max Pooling, weil sich damit für diesen Anwendungsfall erfahrungsgemäß eine höhere Genauigkeit erzielen lässt. (vgl. \cite{tensorflowTutorial})
 
-Grund für das unterschiedliche Verhalten von Max Pooling und Average Pooling ist, dass sich die Ausgaben der beiden Verfahren bezüglich ihres Kontrastverhaltens unterscheiden. In den meisten Fällen geht dem Pooling Layer ein Convolution Layer voraus. Bei der Faltungsoperation wird nach bestimmten Bildabschnitten gesucht, die durch einen oder mehrere Filterkernel definiert sind. Wenn der gesuchte Bildabschnitt genau unter dem Filterkernel liegt, schlägt die Aktivierung des Perceptrons für diese Position stark aus. Bereits bei geringen Abweichungen passiert dies allerdings nicht mehr. Stattdessen stellt sich an diesen Positionen ein scheinbar zufälliges Rauschen ein. Bei der nachfolgenden Pooling-Operation sollen die starken Ausschläge möglichst erhalten bleiben, weil darin die relevantesten Informationen enthalten sind. Beim Average Pooling werden nun die Featuremaps ähnlich wie mit einem Glättungsfilter derart verarbeitet, dass der Kontrast abnimmt. Somit nähern sich die Ausschläge und das Rauschen signifikant an, wodurch das Ergebnis des Poolings für nachfolgende Layer schwerer zu Verarbeiten wird. Beim Max Pooling werden positive Ausschläge unverändert weitergegeben, somit sind sie auch in nachfolgenden Layern deutlich vom Rest der Featuremap zu unterscheiden. Negative Ausschläge können beim Max Pooling dagegen nicht erkannt werden, da in diesem Fall das Aktivierungsniveau der Umgebung höher ist und als Maximum weitergegeben wird. Bei der verwendung von Max Pooling kann das Netz demnach nicht darauf trainiert werden, relevante Informationen durch negative Ausschläge darzustellen. Es ist vom Modellaufbau und der Art des Anwendungsfalls abhängig, ob dieser Informationsverlust durch die deutlichere Erkennung von positiven Ausschlägen kompensiert werden kann. (vgl. \cite{paperMixedPooling})In Abbildung \ref{pic:pooling_avg_max} wird das Verhalten der beiden Poolingverfahren durch ein kleines Zahlenbeispiel visualisiert. 
+Grund für das unterschiedliche Verhalten von Max Pooling und Average Pooling ist, dass sich die Ausgaben der beiden Verfahren bezüglich ihres Kontrastverhaltens unterscheiden. In den meisten Fällen geht dem Pooling Layer ein Convolution Layer voraus. Bei der Faltungsoperation wird nach bestimmten Bildabschnitten gesucht, die durch einen oder mehrere Filterkernel definiert sind. Wenn der gesuchte Bildabschnitt genau unter dem Filterkernel liegt, schlägt die Aktivierung des Perceptrons für diese Position stark aus. Bereits bei geringen Abweichungen passiert dies allerdings nicht mehr. Stattdessen stellt sich an diesen Positionen ein scheinbar zufälliges Rauschen ein. Bei der nachfolgenden Pooling-Operation sollen die starken Ausschläge möglichst erhalten bleiben, weil darin die relevantesten Informationen enthalten sind. Beim Average Pooling werden nun die Featuremaps ähnlich wie mit einem Glättungsfilter derart verarbeitet, dass der Kontrast abnimmt. Somit nähern sich die Ausschläge und das Rauschen signifikant an, wodurch das Ergebnis des Poolings für nachfolgende Layer schwerer zu verarbeiten wird. Beim Max Pooling werden positive Ausschläge unverändert weitergegeben, somit sind sie auch in nachfolgenden Layern deutlich vom Rest der Featuremap zu unterscheiden. Negative Ausschläge können beim Max Pooling dagegen nicht erkannt werden, da in diesem Fall das Aktivierungsniveau der Umgebung höher ist und als Maximum weitergegeben wird. Bei der Verwendung von Max Pooling kann das Netz demnach nicht darauf trainiert werden, relevante Informationen durch negative Ausschläge darzustellen. Es ist vom Modellaufbau und der Art des Anwendungsfalls abhängig, ob dieser Informationsverlust durch die deutlichere Erkennung von positiven Ausschlägen kompensiert werden kann. (vgl. \cite{paperMixedPooling})In Abbildung \ref{pic:pooling_avg_max} wird das Verhalten der beiden Poolingverfahren durch ein kleines Zahlenbeispiel visualisiert. 
 \begin{figure}
     \centering 
        \includegraphics[width=0.5\textwidth]{../images/Schmidt/pooling_avg_max.jpg} 
     \caption {Vergleich von Average Pooling und Max Pooling (vgl. \cite{articleCadenceCNN})} 
     \label{pic:pooling_avg_max} 
 \end{figure} 
-Aufgrund der bereits in vorhergenhenden Arbeiten festgestellten besseren Qualität der Ergebnisse bei der Klassifizierung von Ziffern aus der MNIST-Datenbank und zur besseren Vergleichbarkeit mit anderen Implementierungen wird in dieser Arbeit Max Pooling verwendet. 
+Aufgrund der bereits in vorhergenhenden Arbeiten festgestellten besseren Qualität der Ergebnisse bei der Klassifizierung von Ziffern aus der MNIST-Datenbank (vgl. \cite{tensorflowTutorial}) und zur besseren Vergleichbarkeit mit anderen Implementierungen wird in dieser Arbeit Max Pooling verwendet. 
 
 \end{document}
