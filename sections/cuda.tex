@@ -94,7 +94,7 @@ Die Implementierung und Parallelisierung des Convolutional Neural Networks in di
 \begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.6\linewidth]{../images/Riedle/Maxwell_SMM_Single.png}
-	\caption{Aufbau einer Maxwell SMM \cite{CUDA_MAXWELL_White}} \label{pic:cuda_maxwell_smm_single}
+	\caption{Aufbau einer Maxwell SMM \cite{CUDA_MAXWELL_white}} \label{pic:cuda_maxwell_smm_single}
 \end{figure}
 Diese Aufbau ist in Abbildung \ref{pic:cuda_maxwell_smm_single} dargestellt. Jede SMM verfügt über vier Warp-Scheduler. Damit ist es möglich, vier Warps pro SMM konkurrierend zu betreiben. Jeder Warp-Scheduler kontrolliert dabei 32 CUDA-Cores. Die L1-Caches unterscheiden sich nicht von der, der Pascal-Architektur. Auch die Register-Files sind unverändert, wodurch jedem Warp-Scheduler bzw. den darin organisierten CUDA-Cores 16384 32-Bit Register zur Verfügung stehen. Eine weitere Neuerung ist die Verlegung der \emph{PolyMorph Engine 3.0} direkt in die SMM. In der Pascal -Architektur befand sich diese noch außerhalb der SM. \par 
 Es wurden nun alle relevanten Grundlagen der Programmierung auf CUDA sowie der Aufbau und die Struktur der verwendeten Hardware erläutert. Der nächste Abschnitt widmet sich der Implementierung des in dieser Arbeit vorgestellten Convolutional Neural Network unter Zuhilfenahme einer NVIDIA Geforce GTX Titan X Grafikkarte. Es werden der gewählte Ansatz zur Parallelisierung der Berechnungen, ein Ansatz zur Umsetzung der Faltung und die daraus resultierenden Änderungen in den weiteren Schichten des Netzes dargestellt. \par 
