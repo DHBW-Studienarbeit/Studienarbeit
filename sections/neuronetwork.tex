@@ -50,7 +50,7 @@ Die Sigmoidfunktion $\sigma(x)$ enstpricht den gegebenen Forderungen an eine Akt
 \end{align}
 Im Fall der Neuronalen Netze wird die Sigmoidfunktion $\sigma(x)$ auf das Ergebnis der Operation $w\cdot x + b$ angewandt. Damit bestimmt sich also der Output der Perceptronen nach Gleichung \ref{eq:sigmoid_perceptron}. 
 \begin{align} \label{eq:sigmoid_perceptron}
-	output = \simga(w\cdot x + b) = \frac{1}{1 + e^{-(w\cdot x + b)}} 
+	output = \sigma(w\cdot x + b) = \frac{1}{1 + e^{-(w\cdot x + b)}} 
 \end{align}
 Nachteile dieser Funktion sind die schnelle Annäherung der Funktion an die Endwerte $0$ und $1$, sowie ihr Nulldurchgang bei $0.5$. Sie ist daher nur für betragsmäßig kleine Gewichte $w$ und Biases $b$ geeignet. Ihr Graph ist in Abbildung \ref{fig:sigmoid} gezeigt.
 \begin{figure}
