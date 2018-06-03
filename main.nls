@@ -1,0 +1,36 @@
+\begin{thenomenclature} 
+
+ \nomgroup{A}
+
+  \item [{API}]\begingroup Application Programming Interface\nomeqref {0.0}
+		\nompageref{10}
+  \item [{AVX}]\begingroup Advanced Vector Extension\nomeqref {0.0}
+		\nompageref{10}
+  \item [{BLAS}]\begingroup Basic Linear Algebra Subprograms\nomeqref {0.0}
+		\nompageref{10}
+  \item [{CNN}]\begingroup Convolutional Neural Network\nomeqref {0.0}
+		\nompageref{10}
+  \item [{CPU}]\begingroup Central Processing Unit\nomeqref {0.0}
+		\nompageref{10}
+  \item [{MIC}]\begingroup Many Integrated Cores\nomeqref {0.0}
+		\nompageref{10}
+  \item [{MKL}]\begingroup Math Kernel Library\nomeqref {0.0}
+		\nompageref{10}
+  \item [{MLP}]\begingroup Multy Layer Perceptron\nomeqref {0.0}
+		\nompageref{10}
+  \item [{MMX}]\begingroup Multi Media Extension\nomeqref {0.0}
+		\nompageref{10}
+  \item [{MNIST database}]\begingroup Modified National Institute of Standards and Technology database\nomeqref {0.0}
+		\nompageref{10}
+  \item [{OpenMP}]\begingroup Open Multi Procesing\nomeqref {0.0}
+		\nompageref{10}
+  \item [{PCIe}]\begingroup Peripheral Component Interconnect express\nomeqref {0.0}
+		\nompageref{10}
+  \item [{SIMD}]\begingroup Single Instruction, Multiple Data\nomeqref {0.0}
+		\nompageref{10}
+  \item [{SSE}]\begingroup Streaming SIMD Extension\nomeqref {0.0}
+		\nompageref{10}
+  \item [{TBB}]\begingroup Threading Building Blocks\nomeqref {0.0}
+		\nompageref{10}
+
+\end{thenomenclature}
