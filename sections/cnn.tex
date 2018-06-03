@@ -24,7 +24,7 @@ In Abbildung \ref{fig:conv_1} ist der Vorgang für den Faltungskern an einer Pos
 		\centering
 		\includegraphics[width=0.8\linewidth]{../images/Riedle/Convolution_2_2}
 	\end{subfigure}
-	\caption{Faltungsoperation für zwei Ausgangsneuronen (vgl. \cite{NNADL_PIC_CONV_2})} \label{fig:conv_2}
+	\caption{Faltungsoperation für zwei Ausgangsneuronen (vgl. \cite{NNADL_PIC_CONV_1})} \label{fig:conv_2}
 \end{figure}
 Führt man nun die Faltung weiter, erhält man als Ergebnis erneut ein zweidimensionales Ausgangsbild mit geringerer Seitenlänge. Abbildung \ref{fig:conv_2} zeigt diesen Schritt. Für ein $28\times28$-Eingangsbild und einen $5\times5$-Faltungskern erhält man bei einer Schrittweite von $1$ beispielsweise ein $24\times24$-Ausgangsbild. \par 
 Bei dieser Faltungsoperation werden logischerweise für jedes Neuron die gleichen Gewichte verwendet. Im Fall des hier gezeigten Neuronalen Netzwerkes teilen sich die Ausgangsneuronen dieser Operation auch die Biases. Mit der Aktivierungsfunktion $\sigma$ bestimmt sich der Output eines Neurons damit nach Gleichung \ref{eq:conv_activation}.
@@ -35,7 +35,7 @@ Mit einem Satz geteilter Gewichte und Biases ist das Netz nun in der Lage, ein S
 \begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.8\linewidth]{../images/Riedle/Convolution_Features}
-	\caption{Darstellung verschiedener Featuremaps (vgl. \cite{NNADL_PIC_CONV_FEATURES})} \label{fig:conv_features}
+	\caption{Darstellung verschiedener Featuremaps (vgl. \cite{NNADL_PIC_CONV_1})} \label{fig:conv_features}
 \end{figure}
 Dieser Vorgang ist in Abbildung \ref{fig:conv_features} dargestellt. Das Netzwerk ist somit in der Lage verschiedene Strukturelemente an beliebigen Positionen zu erkennen. Erweitert man das Netz um weitere Schichten, kann es mit entsprechendem Training auch lernen, welche Kombinationen dieser Elemente zu einem Mustertyp gehören.\par Damit erweitert sich der eingangs genannte Vorteil von CNNs. Nicht nur die Verschiebung ganzer Muster innerhalb eines Bildes kann erkannt werden, sondern auch wiederkehrende Strukturelemente können für die Erkennung anderer Muster durch entsprechende Kombination in weiteren Schichten genutzt werden.
 
