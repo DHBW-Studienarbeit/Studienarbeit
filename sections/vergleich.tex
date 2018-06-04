@@ -29,7 +29,7 @@ Das Messen der Ausführungszeit für die Implementierung auf einer x86 CPU auf d
 \end{tabular}
 
 Zu erkennen ist, dass die Zeit im User-Mode zirka um den Faktor 30 Größer ist, als die tatsächliche Ausführungszeit.
-Dies liegt am Multithreading des Programms. Wird während der Ausführung mit dem Befehl \texttt{top} die Auslastung des Prozessors angezeigt ist zu sehen, dass die Auslastung der CPU bei 2915\% liegt. Dem Server stehen insgesamt 32 CPU-Kerne zur Verfügung, \texttt{top} rechnet dies auf einen CPU-Kern und so ist es möglich, mehr als 100\% Prozessorauslastung angezeigt zu bekommen.. 
+Dies liegt am Multithreading des Programms. Wird während der Ausführung mit dem Befehl \texttt{top} die Auslastung des Prozessors angezeigt ist zu sehen, dass die Auslastung der CPU bei 2915\% liegt. Dem Server stehen insgesamt 32 CPU-Threads zur Verfügung, \texttt{top} rechnet dies auf einen CPU-Kern und so ist es möglich, mehr als 100\% Prozessorauslastung angezeigt zu bekommen.
 \begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.7\textwidth]{../images/Benz/screenshot_top.png} %Screenshot top
